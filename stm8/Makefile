@@ -18,10 +18,12 @@ b3603.ihx: $(OBJ)
 	@echo LINK $@
 	@$(SDCC) --out-fmt-ihx --code-size 8192 -o $@ $^
 
+.%.c.d: %.c
+	@echo DEP $<
+	@$(SDCC) -M -o $@ $<
+
 %.rel: %.c
 	@echo CC $<
-	@$(SDCC) -M $< > .$<.tmp.d
-	@mv .$<.tmp.d .$<.d
 	@$(SDCC) -c -o $@ $<
 
 test_pwm_accuracy: test_pwm_accuracy.c outputs.c config.c fixedpoint.c
