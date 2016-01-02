@@ -17,6 +17,9 @@ check_size: b3603.ihx
 			 else echo "Code fits the flash, it is $$CODESIZE"; \
 			 fi
 
+deploy: b3603.ihx
+	stm8flash -c stlinkv2 -p stm8s003f3 -w $<
+
 b3603.ihx: $(OBJ)
 	@echo LINK $@
 	@$(SDCC) --out-fmt-ihx --code-size 8192 -o $@ $^
@@ -42,4 +45,4 @@ clean:
 	-rm -f *.rel *.ihx *.lk *.map *.rst *.lst *.asm *.sym *.adb *.cdb .*.d
 	-rm -f $(TESTUTILS)
 
-.PHONY: all clean check_size test
+.PHONY: all clean check_size test deploy
