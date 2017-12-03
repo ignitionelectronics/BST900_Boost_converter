@@ -577,7 +577,6 @@ int main()
 		iwatchdog_tick();
 		read_state();
 		display_refresh();
-		read_buttons();
 		uart_drive();
 		if (read_newline) {
 			process_input();
