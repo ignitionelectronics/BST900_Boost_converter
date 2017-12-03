@@ -44,5 +44,6 @@ test_parse: test_parse.c parse.c
 clean:
 	-rm -f *.rel *.ihx *.lk *.map *.rst *.lst *.asm *.sym *.adb *.cdb .*.d
 	-rm -f $(TESTUTILS)
+	-rm -f *~
 
 .PHONY: all clean check_size test deploy
