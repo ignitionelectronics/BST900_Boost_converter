@@ -1,8 +1,10 @@
+#include <stdint.h>
 
 #include "uart.h"
 #include "stm8s.h"
+#include "buttons.h"
 
-void read_buttons(void)
+uint8_t read_buttons(void)
 {
     uint8_t dominant_keys_pressed=0;
     uint8_t secondary_keys_pressed=0;
@@ -21,7 +23,7 @@ void read_buttons(void)
     // PC7
     if( (PC_IDR & (1<<7)) ==0) {
         dominant_keys_pressed=1;
-        button=1;	// SET
+        button=BUTTON_SET;	// SET
     }
     
     if(!dominant_keys_pressed) {
@@ -77,15 +79,20 @@ void read_buttons(void)
 if(button_previous==0) {
     // only react on first key event
     if (dominant_keys_pressed |secondary_keys_pressed ) {
+        /*
         uart_write_str("Button pressed: ");
         uart_write_int(button);
         uart_write_str("\r\n");
+        */
+        return button;
     }
 }
 
 //
 button_previous=button;
 
+
 // perhaps make this functin usefull and return something...
+return 0;
 }
 

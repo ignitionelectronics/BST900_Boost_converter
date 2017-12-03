@@ -33,6 +33,7 @@
 #include "parse.h"
 #include "adc.h"
 #include "buttons.h"
+#include "fsm.h"
 
 #define CAP_VMIN 10 // 10mV
 #define CAP_VMAX 35000 // 35 V
@@ -517,7 +518,7 @@ void read_state(void)
 				// Calculation: val * cal_vin * 3.3 / 1024
 				state.vin = adc_to_volt(val, &cfg_system.vin_adc);
 				ch = 2;
-				{
+/*				{
 					uint8_t ch1;
 					uint8_t ch2;
 					uint8_t ch3;
@@ -530,7 +531,7 @@ void read_state(void)
 
 					display_show(ch1, 0, ch2, 1, ch3, 0, ch4, 0);
 				}
-				break;
+*/				break;
 		}
 
 		adc_start(ch);
@@ -556,6 +557,7 @@ void ensure_afr0_set(void)
 int main()
 {
 	unsigned long i = 0;
+	uint8_t button=0;
 
 	pinout_init();
 	clk_init();
@@ -577,7 +579,8 @@ int main()
 		iwatchdog_tick();
 		read_state();
 		display_refresh();
-		read_buttons();
+		button=read_buttons();
+		process_fsm_state(button);
 		uart_drive();
 		if (read_newline) {
 			process_input();

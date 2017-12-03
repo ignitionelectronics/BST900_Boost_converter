@@ -1,4 +1,4 @@
-SRC=main.c display.c uart.c eeprom.c outputs.c config.c fixedpoint.c parse.c adc.c buttons.c
+SRC=main.c display.c uart.c eeprom.c outputs.c config.c fixedpoint.c parse.c adc.c buttons.c fsm.c
 CFLAGS= -lstm8 -mstm8 --opt-code-size --std-c99 --fverbose-asm
 OBJ=$(SRC:.c=.rel)
 DEP=$(SRC:%.c=.%.c.d)
