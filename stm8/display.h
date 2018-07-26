@@ -16,7 +16,19 @@
  *  along with B3603 alternative firmware.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef DISPLAY_H
+#define DISPLAY_H
+
 #include <stdint.h>
 
+#define DFLT_DISPLAY_REFRESH 8000 //around 0.5s
+#define UPDATE_FAST 1
+#define UPDATE_SLOW 2
+
 void display_refresh(void);
-void display_show(uint8_t ch1, uint8_t dot1, uint8_t ch2, uint8_t dot2, uint8_t ch3, uint8_t dot3, uint8_t ch4, uint8_t dot4);
+void display_vin(uint16_t vin_value, uint8_t update_type);
+void display_vout(uint16_t vout_value, uint8_t update_type);
+void display_iout(uint16_t iout_value, uint8_t update_type);
+void display_conf(uint8_t update_type);
+
+#endif //DISPLAY_H

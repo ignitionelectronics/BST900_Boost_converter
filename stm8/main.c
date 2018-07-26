@@ -16,7 +16,7 @@
  *  along with B3603 alternative firmware.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define FW_VERSION "1.0.1"
+#define FW_VERSION "2.0.0"
 #define MODEL "B3603"
 
 #include "stm8s.h"
@@ -24,7 +24,6 @@
 #include <stdint.h>
 #include <ctype.h>
 
-#include "display.h"
 #include "fixedpoint.h"
 #include "uart.h"
 #include "eeprom.h"
@@ -113,11 +112,14 @@ void set_output(uint8_t *s)
 	autocommit();
 }
 
-void set_voltage(uint8_t *s)
+void set_voltage(uint8_t *s, uint16_t voltage)
 {
-	fixed_t val;
+	fixed_t val = voltage;
 
-	val = parse_millinum(s);
+	if (val == 0) {
+		if (s == NULL) return;
+		val = parse_millinum(s);
+	}
 	if (val == 0xFFFF)
 		return;
 
@@ -130,19 +132,25 @@ void set_voltage(uint8_t *s)
 		return;
 	}
 
-	uart_write_str("VOLTAGE: SET ");
-	uart_write_millivolt(val);
-	uart_write_str("\r\n");
-	cfg_output.vset = val;
+	//Only writes the set in uart if the command came through uart (better performance)
+	if (s != NULL) {
+		uart_write_str("VOLTAGE: SET ");
+		uart_write_millivolt(val);
+		uart_write_str("\r\n");
+	}
 
+	cfg_output.vset = val;
 	autocommit();
 }
 
-void set_current(uint8_t *s)
+void set_current(uint8_t *s, uint16_t current)
 {
-	fixed_t val;
+	fixed_t val = current;
 
-	val = parse_millinum(s);
+	if (val == 0) {
+		if (s == NULL) return;
+		val = parse_millinum(s);
+	}
 	if (val == 0xFFFF)
 		return;
 
@@ -155,11 +163,14 @@ void set_current(uint8_t *s)
 		return;
 	}
 
-	uart_write_str("CURRENT: SET ");
-	uart_write_milliamp(val);
-	uart_write_str("\r\n");
-	cfg_output.cset = val;
+	//Only writes the set in uart if the command came through uart (better performance)
+	if (s != NULL) {
+		uart_write_str("CURRENT: SET ");
+		uart_write_milliamp(val);
+		uart_write_str("\r\n");
+	}
 
+	cfg_output.cset = val;
 	autocommit();
 }
 
@@ -245,7 +256,7 @@ void parse_uint(const char *name, uint32_t *pval, uint8_t *s)
 
 void process_input()
 {
-	// Eliminate the CR/LF character
+/*	// Eliminate the CR/LF character
 	uart_read_buf[uart_read_len-1] = 0;
 
 	if (strcmp(uart_read_buf, "MODEL") == 0) {
@@ -254,7 +265,6 @@ void process_input()
 		uart_write_str("VERSION: " FW_VERSION "\r\n");
 	} else if (strcmp(uart_read_buf, "SYSTEM") == 0) {
 		uart_write_str("MODEL: " MODEL "\r\n" "VERSION: " FW_VERSION "\r\n");
-
 		write_str("NAME: ", cfg_system.name);
 		write_onoff("ONSTARTUP: ", cfg_system.default_on);
 		write_onoff("AUTOCOMMIT: ", cfg_system.autocommit);
@@ -382,9 +392,9 @@ void process_input()
 			} else if (strcmp(uart_read_buf, "OUTPUT") == 0) {
 				set_output(uart_read_buf + idx + 1);
 			} else if (strcmp(uart_read_buf, "VOLTAGE") == 0) {
-				set_voltage(uart_read_buf + idx + 1);
+				set_voltage(uart_read_buf + idx + 1, 0);
 			} else if (strcmp(uart_read_buf, "CURRENT") == 0) {
-				set_current(uart_read_buf + idx + 1);
+				set_current(uart_read_buf + idx + 1, 0);
 			} else if (strcmp(uart_read_buf, "AUTOCOMMIT") == 0) {
 				set_autocommit(uart_read_buf + idx + 1);
 			} else if (strcmp(uart_read_buf, "CALVINADCA") == 0) {
@@ -418,7 +428,7 @@ void process_input()
 
 	uart_read_len = 0;
 	read_newline = 0;
-}
+*/}
 
 inline void clk_init()
 {
@@ -518,20 +528,7 @@ void read_state(void)
 				// Calculation: val * cal_vin * 3.3 / 1024
 				state.vin = adc_to_volt(val, &cfg_system.vin_adc);
 				ch = 2;
-/*				{
-					uint8_t ch1;
-					uint8_t ch2;
-					uint8_t ch3;
-					uint8_t ch4;
-
-					ch1 = '0' + (state.vin / 10000) % 10;
-					ch2 = '0' + (state.vin / 1000) % 10;
-					ch3 = '0' + (state.vin / 100) % 10;
-					ch4 = '0' + (state.vin / 10 ) % 10;
-
-					display_show(ch1, 0, ch2, 1, ch3, 0, ch4, 0);
-				}
-*/				break;
+				break;
 		}
 
 		adc_start(ch);
@@ -557,7 +554,7 @@ void ensure_afr0_set(void)
 int main()
 {
 	unsigned long i = 0;
-	uint8_t button=0;
+	button_t button = BUTTON_NONE;
 
 	pinout_init();
 	clk_init();
@@ -580,7 +577,7 @@ int main()
 		read_state();
 		display_refresh();
 		button=read_buttons();
-		process_fsm_state(button);
+		process_fsm(button, &cfg_system, &cfg_output, &state);
 		uart_drive();
 		if (read_newline) {
 			process_input();

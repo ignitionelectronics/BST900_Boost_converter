@@ -204,17 +204,18 @@ def lse(xdata, ydata):
 
     return (alpha, beta)
 
-def auto_calibration():
+def calibration(auto):
     psu = B3603(sys.argv[2])
     if not psu.open():
         print 'Failed to open serial port to B3603 on serial %s' % sys.argv[2]
         return
 
-    dmm = Multimeter(sys.argv[3], sys.argv[4])
-    if not dmm.open():
-        print 'Failed to open serial port to multimeter on serial %s model %s' % (sys.argv[3], sys.argv[4])
-        psu.close()
-        return
+    if auto == True:
+        dmm = Multimeter(sys.argv[3], sys.argv[4])
+        if not dmm.open():
+            print 'Failed to open serial port to multimeter on serial %s model %s' % (sys.argv[3], sys.argv[4])
+            psu.close()
+            return
 
     vin = psu.status()['vin']
     NUM_STEPS = 20
@@ -239,11 +240,15 @@ def auto_calibration():
 
     for step in xrange(NUM_STEPS):
         volt = MIN_VOLTAGE + step * STEP_SIZE
-        print 'Setting voltage to', volt
+        print step , '. Setting voltage to', volt
         (pwm_vout, pwm_cout) = psu.voltage(volt)
         # Wait 1 second for things to stabilize
         time.sleep(1)
-        vout = dmm.sample3(3) # Use three samples
+        if auto == True:
+            vout = dmm.sample3(3) # Use three samples
+        else:
+            vout = input("Enter the Vout measuerd with Multimeter: ")  
+
         if vout == None:
             print 'Failed to get vout'
             valid = False
@@ -313,13 +318,13 @@ def main():
         if len(sys.argv) != 5:
             return usage()
         else:
-            auto_calibration()
+            calibration(True)
 
     if sys.argv[1] == '-m':
         if len(sys.argv) != 3:
             return usage()
         else:
-            manual_calibration()
+            calibration(False)
 
 if __name__ == '__main__':
     main()

@@ -2,7 +2,7 @@ SRC=main.c display.c uart.c eeprom.c outputs.c config.c fixedpoint.c parse.c adc
 CFLAGS= -lstm8 -mstm8 --opt-code-size --std-c99 --fverbose-asm
 OBJ=$(SRC:.c=.rel)
 DEP=$(SRC:%.c=.%.c.d)
-SDCC=/home/arjan/hardwareinfo/b3603/sdcc/bin/sdcc $(CFLAGS)
+SDCC=sdcc $(CFLAGS)
 TESTUTILS=test_pwm_accuracy test_adc_accuracy test_parse
 
 all: b3603.ihx check_size
@@ -12,7 +12,12 @@ test: $(TESTUTILS)
 -include $(DEP)
 
 check_size: b3603.ihx
-		@CODESIZE=$$(grep '^CODE' b3603.map |head -n1 | sed -e 's/^.*=\s*\([0-9]\+\).*$$/\1/'); \
+		@CODESIZE=$$(echo $$(($$(grep '^HOME' b3603.map |head -n1 | sed -e 's/^.*=\s*\([0-9]\+\).*$$/\1/')+\
+			$$(grep '^GSINIT' b3603.map |head -n1 | sed -e 's/^.*=\s*\([0-9]\+\).*$$/\1/')+ \
+			$$(grep '^GSFINAL' b3603.map |head -n1 | sed -e 's/^.*=\s*\([0-9]\+\).*$$/\1/')+ \
+			$$(grep '^CODE' b3603.map |head -n1 | sed -e 's/^.*=\s*\([0-9]\+\).*$$/\1/')+ \
+			$$(grep '^CONST' b3603.map |head -n1 | sed -e 's/^.*=\s*\([0-9]\+\).*$$/\1/')+ \
+			$$(grep '^INITIALIZER' b3603.map |head -n1 | sed -e 's/^.*=\s*\([0-9]\+\).*$$/\1/')))); \
 			 if [ "$$CODESIZE" -gt 8192 ]; then echo "Code is too large, it is $$CODESIZE bytes"; exit 1; \
 			 else echo "Code fits the flash, it is $$CODESIZE"; \
 			 fi

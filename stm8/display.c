@@ -18,31 +18,54 @@
 
 #include "display.h"
 #include "stm8s.h"
+#include "uart.h"
 
 #include <string.h>
 
-uint8_t display_idx;
-uint8_t display_data[4];
-uint8_t pending_display_data[4];
-uint8_t pending_update;
-uint16_t timer;
+static uint8_t Display_idx;
+static uint8_t Display_data[4];
+static uint8_t Pending_display_data[4];
+static uint8_t Pending_update;
 
-static const uint8_t display_number[10] = {
-	0xFC, // '0'
-	0x60, // '1'
-	0xDA, // '2'
-	0xF2, // '3'
-	0x66, // '4'
-	0xB6, // '5'
-	0xBE, // '6'
-	0xE0, // '7'
-	0xFE, // '8'
-	0xF6, // '9'
-};
+#define NALFA 17
+static const uint8_t num_code[NALFA] = {0xFC,0x60,0xDA,0xF2,0x66,0xB6,0xBE,0xE0,0xFE,0xF6,0xEE,0x9C,0x9E,0x8E,0xEC,0xFC,0x7C,};
+static const char alfa_code[NALFA]   = {'0' ,'1' ,'2' ,'3' ,'4' ,'5' ,'6' ,'7' ,'8' ,'9' ,'A' ,'C' ,'E' ,'F' ,'N' ,'O' ,'V',};
+static uint16_t divisor[4] = {10000, 1000, 100, 10};
 
 #define SET_DATA(bit) do { if (bit) { PD_ODR |= (1<<4); } else { PD_ODR &= ~(1<<4); }} while (0)
 #define PULSE_CLOCK() do { PA_ODR |= (1<<1); PA_ODR &= ~(1<<1); } while (0)
 #define SAVE_DATA() do { PA_ODR &= ~(1<<2); PA_ODR |= (1<<2); } while (0)
+
+#undef DEBUG
+#ifdef DEBUG
+char get_alfa(uint8_t num, uint8_t *dot)
+{
+	uint8_t i;
+	*dot = 0;
+
+	if (num & 0x01) {
+		*dot = 1;
+		num &= 0xFE;
+	}
+	for (i = 0; i < NALFA; i++) {
+		if (num == num_code[i])
+			return alfa_code[i];
+	}
+	return 'X';
+}
+
+void debug_pending_display(void)
+{
+	uint8_t i, dot = 0;
+	uart_write_str("DISPLAY: ");
+	for (i = 0; i < 4; i++) {
+		uart_write_ch(get_alfa(Pending_display_data[3-i], &dot));
+		if (dot)
+			uart_write_ch('.');
+	}
+	uart_write_str("\n");
+}
+#endif
 
 inline void display_word(uint16_t word)
 {
@@ -59,38 +82,87 @@ inline void display_word(uint16_t word)
 
 void display_refresh(void)
 {
-	int i = display_idx++;
+	int i = Display_idx++;
 	uint8_t bit = 8+(i*2);
 	uint16_t digit = 0xFF00 ^ (3<<bit);
+	static uint16_t timer;
 
 	if (timer > 0)
 		timer--;
-	if (pending_update && timer == 0) {
-		memcpy(display_data, pending_display_data, sizeof(display_data));
-		pending_update = 0;
-		timer = 1500; // 1/2 of a second, approximately
+	if (((Pending_update == UPDATE_SLOW) && (timer == 0)) || Pending_update == UPDATE_FAST) {
+		memcpy(Display_data, Pending_display_data, sizeof(Display_data));
+		Pending_update = 0;
+		timer = DFLT_DISPLAY_REFRESH;
+#ifdef DEBUG
+		debug_pending_display();
+#endif
 	}
 
-	display_word(digit | display_data[i]);
+	display_word(digit | Display_data[i]);
 
-	if (display_idx == 4)
-		display_idx = 0;
+	if (Display_idx == 4)
+		Display_idx = 0;
 }
 
 uint8_t display_char(uint8_t ch, uint8_t dot)
 {
 	if (dot)
 		dot = 1;
-	if (ch >= '0' && ch <= '9')
-		return display_number[ch-'0'] | dot;
+	if (ch >= 0 && ch <= NALFA)
+		return num_code[ch] | dot;
 	return dot;
 }
 
-void display_show(uint8_t ch1, uint8_t dot1, uint8_t ch2, uint8_t dot2, uint8_t ch3, uint8_t dot3, uint8_t ch4, uint8_t dot4)
+void display_smart_digits(uint16_t disp_value, uint8_t *pending_display_p)
 {
-	pending_display_data[3] = display_char(ch1, dot1);
-	pending_display_data[2] = display_char(ch2, dot2);
-	pending_display_data[1] = display_char(ch3, dot3);
-	pending_display_data[0] = display_char(ch4, dot4);
-	pending_update = 1;
+	uint8_t ch = 0;
+	uint8_t dot = 0;
+	uint8_t i = 0, c = 0;
+	
+	//Display the number, with the dot changing position when skiping not significant zero
+	for (i = 0; i < 4; i++) {
+		ch = (disp_value/divisor[i])%10;
+		//Ignore zero or less (3th after dot) significant digit
+		if ((i == 0 && ch == 0)||(c > 2)) continue;
+		if (i == 1) dot = 1;
+		*(pending_display_p - c++) = display_char(ch, dot);
+		dot = 0;
+	}
+}
+
+void display_vin(uint16_t vin_value, uint8_t update_type)
+{
+	//Display 'E' - Entrance.
+	Pending_display_data[3] = display_char(12, 0);
+	//Display Digits
+	display_smart_digits(vin_value, &Pending_display_data[2]);
+	Pending_update = update_type;
+}
+
+void display_vout(uint16_t vout_value, uint8_t update_type)
+{
+	//Display 'V' - Voltage.
+	Pending_display_data[0] = display_char(16, 0);
+	//Display Digits
+	display_smart_digits(vout_value, &Pending_display_data[3]);
+	Pending_update = update_type;
+}
+
+void display_iout(uint16_t iout_value, uint8_t update_type)
+{
+	//Display 'A' - Ampere.
+	Pending_display_data[0] = display_char(10, 0);
+	//Display Digits
+	display_smart_digits(iout_value, &Pending_display_data[3]);
+	Pending_update = update_type;
+}
+
+void display_conf(uint8_t update_type)
+{
+	//Display 'CONF.' - Confirm.
+	Pending_display_data[3] = display_char(11, 0);
+	Pending_display_data[2] = display_char(15, 0);
+	Pending_display_data[1] = display_char(14, 0);
+	Pending_display_data[0] = display_char(13, 1);
+	Pending_update = update_type;
 }
