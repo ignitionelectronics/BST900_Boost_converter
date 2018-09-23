@@ -30,5 +30,6 @@ void display_vin(uint16_t vin_value, uint8_t update_type);
 void display_vout(uint16_t vout_value, uint8_t update_type);
 void display_iout(uint16_t iout_value, uint8_t update_type);
 void display_conf(uint8_t update_type);
+void display_save(uint8_t update_type);
 
 #endif //DISPLAY_H

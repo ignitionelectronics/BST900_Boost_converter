@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 
-uint16_t parse_millinum(uint8_t *s);
+uint32_t parse_uint32(uint8_t *s);
+uint32_t parse_set_value(uint8_t *s);
 
 #endif

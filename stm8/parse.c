@@ -19,10 +19,16 @@
 #include "parse.h"
 #include "uart.h"
 
-uint16_t parse_num(uint8_t *s, uint8_t **stop, uint8_t *digits_seen)
+#undef DEBUG
+// If USE MILLI is defined the uart will expect to receive values like 12.345, otherwise it will be 12345
+// Using now not defined to save space.
+#undef USE_MILLI
+
+#ifdef USE_MILLI
+uint32_t _parse_num(uint8_t *s, uint8_t **stop, uint8_t *digits_seen)
 {
 	uint8_t digit;
-	uint16_t num = 0;
+	uint32_t num = 0;
 
 	*digits_seen = 0;
 
@@ -37,16 +43,16 @@ uint16_t parse_num(uint8_t *s, uint8_t **stop, uint8_t *digits_seen)
 	return num;
 }
 
-uint16_t parse_millinum(uint8_t *s)
+uint32_t parse_millinum(uint8_t *s)
 {
 	uint8_t *t = s;
 	uint8_t *stop;
 	uint32_t fraction_digits = 0;
-	uint16_t whole_digits = 0;
+	uint32_t whole_digits = 0;
 	uint8_t digits_seen;
 
-	whole_digits = parse_num(s, &stop, &digits_seen);
-	if (whole_digits > 62 || digits_seen > 2)
+	whole_digits = _parse_num(s, &stop, &digits_seen);
+	if (digits_seen > 3)
 		goto invalid_number;
 
 	whole_digits *= 1000;
@@ -57,7 +63,7 @@ uint16_t parse_millinum(uint8_t *s)
 	if (*stop != '.')
 		goto invalid_number;
 
-	fraction_digits = parse_num(stop+1, &stop, &digits_seen);
+	fraction_digits = _parse_num(stop+1, &stop, &digits_seen);
 	if (fraction_digits > 999 || digits_seen > 3)
 		goto invalid_number;
 
@@ -74,4 +80,30 @@ invalid_number:
 	uart_write_ch('\'');
 	uart_write_str("\r\n");
 	return 0xFFFF;
+}
+#endif
+
+uint32_t parse_uint32(uint8_t *s)
+{
+	uint32_t val = 0;
+
+	for (; *s; s++) {
+		uint8_t ch = *s;
+		if (ch >= '0' && ch <= '9') {
+			val = val*10 + (ch-'0');
+		} else {
+			return 0xFFFFFFFF;
+		}
+	}
+
+	return val;
+}
+
+uint32_t parse_set_value(uint8_t *s)
+{
+#ifdef USE_MILLI
+	return parse_millinum(s);
+#else
+	return parse_uint32(s);
+#endif
 }

@@ -26,7 +26,7 @@
 #define OUTPUT_CONFIG ((cfg_output_t *)0x4040)
 
 #define SYSTEM_CFG_VERSION 2
-#define OUTPUT_CFG_VERSION 1
+#define OUTPUT_CFG_VERSION 2
 
 #define DEFAULT_NAME_STR "Unnamed"
 
@@ -48,8 +48,6 @@ cfg_output_t default_cfg_output = {
 	OUTPUT_CFG_VERSION,
 	5000, // 5V
 	500, // 0.5A
-	0,
-	0,
 };
 
 void config_default_system(cfg_system_t *sys)
@@ -84,9 +82,9 @@ void config_load_system(cfg_system_t *sys)
 	validate_system_config(sys);
 }
 
-void config_save_system(cfg_system_t *sys)
+uint8_t config_save_system(cfg_system_t *sys)
 {
-	eeprom_save_data((uint8_t*)SYSTEM_CONFIG, (uint8_t*)sys, sizeof(*sys));
+	return eeprom_save_data((uint8_t*)SYSTEM_CONFIG, (uint8_t*)sys, sizeof(*sys));
 }
 
 void config_default_output(cfg_output_t *cfg)
@@ -111,7 +109,7 @@ void config_load_output(cfg_output_t *cfg)
 	validate_output_config(cfg);
 }
 
-void config_save_output(cfg_output_t *cfg)
+uint8_t config_save_output(cfg_output_t *cfg)
 {
-	eeprom_save_data((uint8_t*)OUTPUT_CONFIG, (uint8_t*)cfg, sizeof(*cfg));
+	return eeprom_save_data((uint8_t*)OUTPUT_CONFIG, (uint8_t*)cfg, sizeof(*cfg));
 }

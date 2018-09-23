@@ -21,9 +21,11 @@
 
 static uint8_t eeprom_unlock_data(void)
 {
+	uint16_t i;
 	FLASH_DUKR = 0xAE; // Enable the flash data writing
 	FLASH_DUKR = 0x56;
 
+ 	for (i=0; i<10000; i++)__asm__("nop\n"); // wait to get the new status
 	return (FLASH_IAPSR & FLASH_IAPSR_DUL); // True if device unlocked
 }
 

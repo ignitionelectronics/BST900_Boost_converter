@@ -26,8 +26,6 @@ typedef struct {
 	uint8_t version;
 	uint16_t vset; // mV
 	uint16_t cset; // mA
-	uint16_t vshutdown; // mV
-	uint16_t cshutdown; // mA
 } cfg_output_t;
 
 // These parameters correspond to the linear formula:
@@ -67,10 +65,13 @@ typedef struct {
 } state_t;
 
 void config_load_system(cfg_system_t *sys);
-void config_save_system(cfg_system_t *sys);
 void config_default_system(cfg_system_t *sys);
 void config_load_output(cfg_output_t *cfg);
-void config_save_output(cfg_output_t *cfg);
 void config_default_output(cfg_output_t *cfg);
 
+/*
+ * return 0 if error; non zero if OK
+ * */
+uint8_t config_save_output(cfg_output_t *cfg);
+uint8_t config_save_system(cfg_system_t *sys);
 #endif

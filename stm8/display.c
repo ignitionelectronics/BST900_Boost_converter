@@ -160,9 +160,19 @@ void display_iout(uint16_t iout_value, uint8_t update_type)
 void display_conf(uint8_t update_type)
 {
 	//Display 'CONF.' - Confirm.
-	Pending_display_data[3] = display_char(11, 0);
-	Pending_display_data[2] = display_char(15, 0);
-	Pending_display_data[1] = display_char(14, 0);
-	Pending_display_data[0] = display_char(13, 1);
+	Pending_display_data[3] = display_char(11, 0); //C
+	Pending_display_data[2] = display_char(15, 0); //O
+	Pending_display_data[1] = display_char(14, 0); //N
+	Pending_display_data[0] = display_char(13, 1); //F.
+	Pending_update = update_type;
+}
+
+void display_save(uint8_t update_type)
+{
+	//Display 'SAVE'
+	Pending_display_data[3] = display_char(5, 0);  //S
+	Pending_display_data[2] = display_char(10, 0); //A
+	Pending_display_data[1] = display_char(16, 0); //V
+	Pending_display_data[0] = display_char(12, 0); //E
 	Pending_update = update_type;
 }
