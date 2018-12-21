@@ -91,7 +91,11 @@ uint32_t parse_uint32(const char *s)
 		if (ch >= '0' && ch <= '9') {
 			val = val*10 + (ch-'0');
 		} else {
-			return 0xFFFFFFFF;
+			//If 's' is like 111 333, it will return 111
+			if (ch == ' ')
+				break;
+			else
+				return 0xFFFFFFFF;
 		}
 	}
 

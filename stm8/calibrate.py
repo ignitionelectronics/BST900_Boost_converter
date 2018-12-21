@@ -26,7 +26,7 @@ class B3603(object):
             self.clear_input()
             s = self.system()
             print 'OPEN "%s"' % s
-            if s  == 'MODEL: B3603':
+            if s  == 'M: B3603':
                 return True
             else:
                 print 'Couldnt read the right model out of the serial port, got "%s", expected to see "MODEL: B3603"' % s
@@ -74,41 +74,42 @@ class B3603(object):
         constant = 'UNKNOWN'
 
         for line in lines:
-            part = line.split(':')
-            if part[0] == 'OUTPUT':
+            part = line.split(' ')
+            if part[0] == 'OUTPUT:':
                 output = part[1].strip()
-            elif part[0] == 'VIN':
-                vin = float(part[1].strip())
-            elif part[0] == 'VOUT':
+            elif part[0] == 'VIN:':
+                vin = float(part[2].strip())
+            elif part[0] == 'VOUT:':
                 vout = float(part[1].strip())
-            elif part[0] == 'COUT':
+            elif part[0] == 'COUT:':
                 cout = float(part[1].strip())
-            elif part[0] == 'CONSTANT':
+            elif part[0] == 'CONSTANT:':
                 constant = part[1].strip()
 
         return dict(output=output, vin=vin, vout=vout, cout=cout, constant=constant)
 
     def rstatus(self):
-        lines = self.command("RSTATUS")
+        lines = self.command("STATUS")
+        output = 'UNKNOWN'
         vin = 0
         vout = 0
         cout = 0
-        vin_calc = 0
-        vout_calc = 0
-        cout_calc = 0
         constant = 'UNKNOWN'
 
         for line in lines:
-            part = line.split(':')
-            if part[0] == 'VIN ADC':
-                vin = float(part[1].strip())
-            elif part[0] == 'VOUT ADC':
-                vout = float(part[1].strip())
-            elif part[0] == 'COUT ADC':
-                cout = float(part[1].strip())
+            part = line.split(' ')
+            if part[0] == 'OUTPUT:':
+                output = part[1].strip()
+            elif part[0] == 'VIN:':
+                vin = float(part[3].strip())
+            elif part[0] == 'VOUT:':
+                vout = float(part[2].strip())
+            elif part[0] == 'COUT:':
+                cout = float(part[2].strip())
+            elif part[0] == 'CONSTANT:':
+                constant = part[1].strip()
 
-        return dict(vin_adc=vin, vout_adc=vout, cout_adc=cout)
-
+        return dict(output=output, vin_adc=vin, vout_adc=vout, cout_adc=cout, constant=constant)
 
     def output_on(self):
         return self.command("OUTPUT 1")
@@ -124,8 +125,9 @@ class B3603(object):
             word = line.split(' ')
             if word[0] != 'PWM' and word[0] != 'aWM': continue
             if word[1] == 'VOLTAGE':
-                pwm_vout = float(word[2])
-            if word[1] == 'CURRENT': pwm_cout = float(word[2])
+                pwm_vout = float(word[3])
+            if word[1] == 'CURRENT':
+                pwm_cout = float(word[3])
         return (pwm_vout, pwm_cout)
 
     def current(self, c):
@@ -136,8 +138,9 @@ class B3603(object):
             word = line.split(' ')
             if word[0] != 'PWM' and word[0] != 'aWM': continue
             if word[1] == 'VOLTAGE':
-                pwm_vout = float(word[2])
-            if word[1] == 'CURRENT': pwm_cout = float(word[2])
+                pwm_vout = float(word[3])
+            if word[1] == 'CURRENT':
+                pwm_cout = float(word[3])
         return (pwm_vout, pwm_cout)
 
 
@@ -288,16 +291,13 @@ def calibration_voltage(auto):
         adc_b_tmp = 0
     adc_b = int(adc_b_tmp*65536)
     print val, adc_a, adc_b
-    print psu.command('CALVOUTADCA %d' % adc_a)
-    print psu.command('CALVOUTADCB %d' % adc_b)
-    print
+    print psu.command('CAL_VOUTADC %d %d' % (adc_a, adc_b))
     print 'PWM'
     val = lse(vout_data, pwm_data)
     pwm_a = int(val[0]*65536)
     pwm_b = int(val[1]*65536)
     print val, pwm_a, pwm_b
-    print psu.command('CALVOUTPWMA %d' % pwm_a)
-    print psu.command('CALVOUTPWMB %d' % pwm_b)
+    print psu.command('CAL_VOUTPWM %d %d' % (pwm_a, pwm_b))
 
     psu.close()
 
@@ -378,16 +378,14 @@ def calibration_current(auto):
         adc_b_tmp = 0
     adc_b = int(adc_b_tmp*65536)
     print val, adc_a, adc_b
-    print psu.command('CALCOUTADCA %d' % adc_a)
-    print psu.command('CALCOUTADCB %d' % adc_b)
+    print psu.command('CAL_COUTADC %d %d' % (adc_a, adc_b))
     print
     print 'PWM'
     val = lse(cout_data, pwm_data)
     pwm_a = int(val[0]*65536)
     pwm_b = int(val[1]*65536)
     print val, pwm_a, pwm_b
-    print psu.command('CALCOUTPWMA %d' % pwm_a)
-    print psu.command('CALCOUTPWMB %d' % pwm_b)
+    print psu.command('CAL_COUTPWM %d %d' % (pwm_a, pwm_b))
 
     psu.close()
 
@@ -402,21 +400,20 @@ def calibration_init():
     adc_b = int(0173.3114 * 65536)
     pwm_a = int(0002.0585 * 65536)
     pwm_b = int(0368.0794 * 65536)
-    print psu.command('CALCOUTADCA %d' % adc_a)
-    print psu.command('CALCOUTADCB %d' % adc_b)
-    print psu.command('CALCOUTPWMA %d' % pwm_a)
-    print psu.command('CALCOUTPWMB %d' % pwm_b)
+    print psu.command('CAL_COUTADC %d %d' % (adc_a, adc_b))
+    print psu.command('CAL_COUTPWM %d %d' % (pwm_a, pwm_b))
 
     #Voltage
     adc_a = int(0005.5681 * 65536)
     adc_b = int(0580.6878 * 65536)
     pwm_a = int(0000.1803 * 65536)
     pwm_b = int(0111.7264 * 65536)
-    print psu.command('CALVOUTADCA %d' % adc_a)
-    print psu.command('CALVOUTADCB %d' % adc_b)
-    print psu.command('CALVOUTPWMA %d' % pwm_a)
-    print psu.command('CALVOUTPWMB %d' % pwm_b)
+    print psu.command('CAL_VOUTADC %d %d' % (adc_a, adc_b))
+    print psu.command('CAL_VOUTPWM %d %d' % (pwm_a, pwm_b))
 
+    #Vin
+    print psu.command('CAL_VINADC %d %d' % (419300, 0))
+    
     print 'First Calibration completed. Use the save command if you would like to keep it.'
     
     psu.close()

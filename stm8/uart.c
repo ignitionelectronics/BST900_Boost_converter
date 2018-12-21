@@ -20,7 +20,7 @@
 #include "fixedpoint.h"
 #include "stm8s.h"
 
-uint8_t uart_write_buf[255];
+uint8_t uart_write_buf[255]; //Device has only 1KByte Memory Ram. Better to not make this too big.
 uint8_t uart_write_start;
 uint8_t uart_write_len;
 
@@ -36,6 +36,8 @@ void uart_init()
 
 	USART1_BRR2 = 0x1;
 	USART1_BRR1 = 0x1A; // 38400 baud, order important between BRRs, BRR1 must be last
+	//USART1_BRR2 = 0x0B;
+	//USART1_BRR1 = 0x08; // 115200 baud, order important between BRRs, BRR1 must be last
 
 	USART1_CR2 = USART_CR2_TEN | USART_CR2_REN; // Allow TX & RX
 

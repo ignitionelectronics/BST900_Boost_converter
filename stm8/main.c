@@ -15,7 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with B3603 alternative firmware.  If not, see <http://www.gnu.org/licenses/>.
  */
-#define DETAILED_HELP 1
+#undef DETAILED_HELP
 #define VERBOSECAL 1
 
 #include "stm8s.h"
@@ -210,26 +210,24 @@ bool set_autocommit(const char *arg)
 
 bool set_calibration(const char*cmd, const char *arg, calibrate_t*cal)
 {
-    char *spc;
-    calibrate_t val;
+	char *spc;
+ 	calibrate_t val;
 	val.a = parse_uint32(arg);
-	if (val.a == 0xFFFFFFFF) {
-        return false;
-    }
+	if (val.a == 0xFFFFFFFF)
+        	return false;
 
-    spc = strchr(arg, ' ');
-    if (spc==NULL) {
-        return false;
-    }
-    *spc = 0;
+ 	spc = strchr(arg, ' ');
+	if (spc==NULL)
+        	return false;
+
+    	*spc = 0;
 	val.b = parse_uint32(spc+1);
-	if (val.b == 0xFFFFFFFF) {
-        return false;
-    }
+	if (val.b == 0xFFFFFFFF)
+        	return false;
 
 	cal->a = val.a;
 	cal->b = val.b;
-    return true;
+	return true;
 }
 
 void write_str(const char *prefix, const char *val)
@@ -254,8 +252,8 @@ void write_raw_millivalue(const char *prefix, uint16_t millival, uint16_t rawval
 {
 	uart_write_str(prefix);
 	uart_write_millivalue(millival);
-    uart_write_ch(' ');
-    uart_write_int(rawval);
+	uart_write_ch(' ');
+	uart_write_int(rawval);
 	uart_write_str("\r\n");
 }
 
@@ -366,11 +364,11 @@ struct command {
 bool handle_command_help(const char*arg);
 
 struct command commandhandlers[] = {
-    { "SYSTEM", 6, handle_system,  OPTIONAL("output version, model, name") },
-    { "CALIBRATION", 11, handle_calibration_dump, OPTIONAL("dump calibration data") },
-    { "LIMITS", 6, handle_limit_dump, OPTIONAL("dump system limits") },
-    { "CONFIG", 6, handle_config_dump, OPTIONAL("dump configuration") },
-    { "STATUS", 6, handle_status_dump, OPTIONAL("output current status") },
+    { "SYSTEM", 6, handle_system,  OPTIONAL("show system information") },
+    { "CALIBRATION", 11, handle_calibration_dump, OPTIONAL("show calibration data") },
+    { "LIMITS", 6, handle_limit_dump, OPTIONAL("show current and voltage limits") },
+    { "CONFIG", 6, handle_config_dump, OPTIONAL("show configuration") },
+    { "STATUS", 6, handle_status_dump, OPTIONAL("show status of the outputs") },
     { "COMMIT", 6, handle_commit_output, OPTIONAL("commit configuration to output") },
     { "SAVE", 4,   handle_save, OPTIONAL("save settings and config to flash") },
     { "LOAD", 4,   handle_load, OPTIONAL("load settings and config from flash") },
@@ -379,11 +377,11 @@ struct command commandhandlers[] = {
     { "STUCK", 5,  handle_stuck, OPTIONAL("simulate problem for debugger") },
 #endif
     { "SNAME", 5, handle_set_name, OPTIONAL("configure device name") },
-    { "OUTPUT", 6, set_output, OPTIONAL("turn output voltage on/off") },
-    { "VOLTAGE", 7, set_voltage_arg, OPTIONAL("set output voltage limit") },
-    { "CURRENT", 7, set_current_arg, OPTIONAL("set output current limit") },
+    { "OUTPUT", 6, set_output, OPTIONAL("turn output on/off") },
+    { "VOLTAGE", 7, set_voltage_arg, OPTIONAL("set output voltage") },
+    { "CURRENT", 7, set_current_arg, OPTIONAL("set output current") },
     { "AUTOCOMMIT", 10, set_autocommit, OPTIONAL("enable/disable auto commit") },
-    { "HELP", 10, handle_command_help },
+    { "HELP", 10, handle_command_help, OPTIONAL("show available commands") },
 };
 
 
@@ -396,13 +394,12 @@ struct calcommand {
 #endif
 };
 
-
 struct calcommand calibrationhandlers[] = {
-    { "VINADC", 9, &cfg_system.vin_adc, OPTIONAL("configure Vin adc -> volt parameters") },
-    { "VOUTADC", 10, &cfg_system.vout_adc, OPTIONAL("configure Vout adc -> volt parameters") },
-    { "VOUTPWM", 10, &cfg_system.vout_pwm, OPTIONAL("configure Vout pwm -> volt parameters") },
-    { "COUTADC", 10, &cfg_system.cout_adc, OPTIONAL("configure Cout adc -> ampere parameters") },
-    { "COUTPWM", 10, &cfg_system.cout_pwm, OPTIONAL("configure Cout pwm -> ampere parameters") },
+    { "VINADC", 6, &cfg_system.vin_adc, OPTIONAL("configure Vin adc -> volt parameters") },
+    { "VOUTADC", 7, &cfg_system.vout_adc, OPTIONAL("configure Vout adc -> volt parameters") },
+    { "VOUTPWM", 7, &cfg_system.vout_pwm, OPTIONAL("configure Vout pwm -> volt parameters") },
+    { "COUTADC", 7, &cfg_system.cout_adc, OPTIONAL("configure Cout adc -> ampere parameters") },
+    { "COUTPWM", 7, &cfg_system.cout_pwm, OPTIONAL("configure Cout pwm -> ampere parameters") },
 };
 bool handle_command_help(const char*arg)
 {
@@ -421,7 +418,7 @@ bool handle_command_help(const char*arg)
         uart_write_str(calibrationhandlers[i].command);
 #ifdef DETAILED_HELP
         uart_write_ch('\t');
-        uart_write_str(commandhandlers[i].helpmessage);
+        uart_write_str(calibrationhandlers[i].helpmessage);
 #endif
         uart_write_str("\r\n");
     }
@@ -452,9 +449,7 @@ void process_input()
             if (uart_read_buf[4+cmdlen]==' ')
                 arg = (const char*)uart_read_buf+4+cmdlen+1;
             if (strncmp((const char*)uart_read_buf+4, calibrationhandlers[i].command, cmdlen) == 0)
-            {
                 ok = set_calibration(calibrationhandlers[i].command, arg, calibrationhandlers[i].value);
-            }
         }
     }
     if (ok)
