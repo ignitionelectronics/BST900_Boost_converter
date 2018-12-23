@@ -12,6 +12,11 @@ Components needed:
 * [CP2102](http://www.banggood.com/Wholesale-USB-To-TTL-or-COM-Converter-Module-buildin-in-CP2102-New-p-27989.html?p=PA11121233669201502E) -- A usb-to-serial TTL-level
 * [STLink V2](http://www.aliexpress.com/item/FREE-SHIPPING-ST-Link-V2-stlink-mini-STM8STM32-STLINK-simulator-download-programming-With-Cover/1766455290.html) -- programmer for the STM8S microcontroller
 
+Software needed:
+* [SDCC v 3.7.0] sudo apt install sdcc
+* [stm8flash](https://github.com/vdudouyt/stm8flash) -- STM8 flasher
+  To compile you will need to install libgusb-dev. To build, run Make and after Make install.
+
 ## Schematics
 
 These were done by flex, the discussion can be seen in the EEVBlog forum (link at the bottom).
