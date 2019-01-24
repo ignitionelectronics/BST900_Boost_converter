@@ -1,4 +1,5 @@
 /* Copyright (C) 2015 Baruch Even
+ * Modified for PWM fan Control by Derek Jennings 2019
  *
  * This file is part of the B3603 alternative firmware.
  *
@@ -145,12 +146,6 @@ INLINE void control_current(cfg_output_t *cfg, cfg_system_t *sys)
 INLINE void control_fan(cfg_system_t *sys)
 {
 	uint16_t ctr = pwm_from_set(state.cout, &sys->fout_pwm);	//Calculate PWM from current measured by adc
-	uart_write_str("PWM FAN ");
-    uart_write_millivalue(state.cout);
-    uart_write_ch(' ');
-	uart_write_int(ctr);
-	uart_write_str("\r\n");
-
 	TIM1_CCR3H = ctr >> 8;
 	TIM1_CCR3L = ctr & 0xFF;
 	TIM1_CR1 |= 0x01; // Enable timer

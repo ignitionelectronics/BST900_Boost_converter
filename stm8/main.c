@@ -209,6 +209,25 @@ bool set_autocommit(const char *arg)
 	}
 }
 
+bool set_default(const char *arg)
+{
+	if (strcmp(arg, "1") == 0 || strcmp(arg, "YES") == 0) {
+		cfg_system.default_on = 1;
+#ifdef VERBOSE
+		uart_write_str("YES\r\n");
+#endif
+        return true;
+	} else if (strcmp(arg, "0") == 0 || strcmp(arg, "NO") == 0) {
+		cfg_system.default_on = 0;
+#ifdef VERBOSE
+		uart_write_str("NO\r\n");
+#endif
+        return true;
+	} else {
+		return false;
+	}
+}
+
 bool set_calibration(const char*cmd, const char *arg, calibrate_t*cal)
 {
 	char *spc;
@@ -382,6 +401,7 @@ struct command commandhandlers[] = {
     { "VOLTAGE", 7, set_voltage_arg, OPTIONAL("set output voltage") },
     { "CURRENT", 7, set_current_arg, OPTIONAL("set output current") },
     { "AUTOCOMMIT", 10, set_autocommit, OPTIONAL("enable/disable auto commit") },
+    { "DEFAULT", 7, set_default, OPTIONAL("enable/disable output on power up") },
     { "HELP", 10, handle_command_help, OPTIONAL("show available commands") },
 };
 
