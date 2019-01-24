@@ -49,6 +49,7 @@ typedef struct {
 
 	calibrate_t vout_pwm;
 	calibrate_t cout_pwm;
+	calibrate_t fout_pwm;
 } cfg_system_t;
 
 typedef struct {

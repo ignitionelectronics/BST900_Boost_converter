@@ -1,3 +1,24 @@
+# BST900
+
+This is a fork of B3603 originally by [baruch](https://github.com/baruch/b3603) and later forked by iafilius and frmaioli
+This fork extends the code to support the BST900 and BST400 boost converters from MingHe.
+BST900 and BST400 have a different architecture to the original B3603. They have a different architecture on their bottom boards, but they all use the same  STM8 based microcontroller top board albeit running slightly different firmware.
+I believe the B3602 should be able to be adapted to drive the BST range.
+
+
+The project is a work in progress. There is no code to try out just yet. I am still awaiting delivery of my STM8 development boards.
+
+## BST900 Architecture
+
+BST900 is based on the UCC3803 Current Mode PWM Controller from TI. It boosts voltages up to 120V and operates at currents up to 15A. (Although I think the cooling would need significant upgrading before getting anywhere near that current.)
+The ouput voltage is controlled by a PWM signal on pin5 of the upper board in exactly the same way as B3603. However the constant current mode operates differently to B3603.
+While B3603 puts a PWM signal on Pin 4 of the top board whose duty cycle is proprtional to the constant current limit, BST900 applies a fixed width pulse to Pin 4 continuously while the board is operating in constant votage mode.
+If the output voltage falls below the designated output voltage, the constant pulse is removed.
+
+Original project page appears below.
+=============================================================================
+
+
 # B3603
 
 This project is about reverse engineering the B3603 control board and figuring

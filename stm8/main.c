@@ -1,19 +1,20 @@
 /* Copyright (C) 2015 Baruch Even
+ * Modified for BST900 by Derek Jennings 2019
  *
- * This file is part of the B3603 alternative firmware.
+ * This file is part of the B3ST900 alternative firmware.
  *
- *  B3603 alternative firmware is free software: you can redistribute it and/or modify
+ *  BST900 alternative firmware is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  B3603 alternative firmware is distributed in the hope that it will be useful,
+ *  BST900 alternative firmware is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with B3603 alternative firmware.  If not, see <http://www.gnu.org/licenses/>.
+ *  along with BST900 alternative firmware.  If not, see <http://www.gnu.org/licenses/>.
  */
 #undef DETAILED_HELP
 #define VERBOSECAL 1
@@ -150,7 +151,7 @@ bool set_voltage(uint16_t voltage)
 	if (val == 0xFFFF)
 		return false;
 
-	if ((val > CAP_VMAX) || (val < CAP_VMIN)) {  // 10 .. 35000 mV
+	if ((val > CAP_VMAX) || (val < CAP_VMIN)) {  // 8000 .. 120000 mV
 		return false;
 	}
 
@@ -174,7 +175,7 @@ bool set_current(uint16_t current)
 	if (val == 0xFFFF)
 		return false;
 
-	if ((val > CAP_CMAX) || (val < CAP_CMIN)) {  // 1 .. 3000 mA
+	if ((val > CAP_CMAX) || (val < CAP_CMIN)) {  // 10 .. 15000 mA
 		return false;
 	}
 
@@ -483,15 +484,15 @@ inline void pinout_init()
 	PB_CR1 = (1<<4);
 	PB_CR2 = 0;
 
-	// PC3 is unknown, input
+	// PC3 is Fan control, output
 	// PC4 is Iout sense, input adc, AIN2
 	// PC5 is Vout control, output
 	// PC6 is Iout control, output
 	// PC7 is Button 1, input
 	PC_ODR = 0;
-	PC_DDR = (1<<5) | (1<<6);
+	PC_DDR = (1<<3) | (1<<5) | (1<<6);
 	PC_CR1 = ((unsigned)1<<7); // For the button
-	PC_CR2 = (1<<5) | (1<<6);
+	PC_CR2 = (1<<3) | (1<<5) | (1<<6);
 
 	// PD1 is Button 2, input
 	// PD2 is Vout sense, input adc, AIN3

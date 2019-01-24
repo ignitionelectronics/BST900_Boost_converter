@@ -52,6 +52,7 @@ cfg_system_t default_cfg_system = {
 
 	.cout_adc = { .a = FLOAT_TO_FIXED(3.3*1.25/8.0), .b = FLOAT_TO_FIXED(200) },   // seems already ok.
 	.cout_pwm = { .a = FLOAT_TO_FIXED(8*0.8/3.3), .b = FLOAT_TO_FIXED(160) },      // still needs tuning.
+	.fout_pwm = { .a = FLOAT_TO_FIXED(8*0.8/3.3), .b = FLOAT_TO_FIXED(160) },      // total guess Needs to be worked out.
 };
 
 cfg_output_t default_cfg_output = {
