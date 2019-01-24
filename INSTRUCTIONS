@@ -22,7 +22,7 @@ ttyUSB0
 In Keyboard settings enable "echo"
 
 Simulate STM8 in PC:
-sstm8 -g -w -tstm8s003 -Suart=1,port=10000 b3603.ihx 
+sstm8 -g -w -tstm8s003 -Suart=1,port=10000 bst900.ihx 
 and to connect:
 telnet localhost 10000
 

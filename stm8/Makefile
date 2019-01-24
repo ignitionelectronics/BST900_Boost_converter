@@ -5,22 +5,22 @@ DEP=$(SRC:%.c=.%.c.d)
 SDCC=sdcc $(CFLAGS)
 TESTUTILS=test_pwm_accuracy test_adc_accuracy test_parse
 
-all: b3603.ihx check_size
+all: bst900.ihx check_size
 
 test: $(TESTUTILS)
 
 -include $(DEP)
 
-check_size: b3603.ihx
-	@CODESIZE=$$(perl -ne 'if (/^(HOME|GSINIT|GSFINAL|CODE|CONST|INITIALIZER)\s+\w+\s+(\w+)/) { $$c{$$1} ||= hex($$2) } END { $$sum += $$_ for values %c; print $$sum; }' b3603.map); \
+check_size: bst900.ihx
+	@CODESIZE=$$(perl -ne 'if (/^(HOME|GSINIT|GSFINAL|CODE|CONST|INITIALIZER)\s+\w+\s+(\w+)/) { $$c{$$1} ||= hex($$2) } END { $$sum += $$_ for values %c; print $$sum; }' bst900.map); \
 			 if [ "$$CODESIZE" -gt 8192 ]; then echo "Code is too large, it is $$CODESIZE bytes"; exit 1; \
 			 else echo "Code fits the flash, it is $$CODESIZE"; \
 			 fi
 
-deploy: b3603.ihx
+deploy: bst900.ihx
 	stm8flash -c stlinkv2 -p stm8s003f3 -w $<
 
-b3603.ihx: $(OBJ)
+bst900.ihx: $(OBJ)
 	@echo LINK $@
 	@$(SDCC) --out-fmt-ihx --code-size 8192 -o $@ $^
 
