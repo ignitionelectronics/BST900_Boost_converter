@@ -15,6 +15,13 @@ The ouput voltage is controlled by a PWM signal on pin5 of the upper board in ex
 While B3603 puts a PWM signal on Pin 4 of the top board whose duty cycle is proprtional to the constant current limit, BST900 applies a fixed width pulse to Pin 4 continuously while the board is operating in constant votage mode.
 If the output voltage falls below the designated output voltage, the constant pulse is removed.
 
+## ToDo
+
+* Implement a PWM control for the cooling fan.
+* Rework Constant Current control to suit BST900.
+* Implement a start at power on feature to suit my application for charging a home battery system.
+* Recalibrate all measurements and PWM to suit BST900
+
 Original project page appears below.
 =============================================================================
 
@@ -29,7 +36,6 @@ replacing the original firmware with one of my own.
 **Current state**: Working, it is functioning and serially controllable.
 
 Components needed:
-* [B3603](http://www.banggood.com/B3603-Precision-CNC-DC-DC-Digital-Buck-Module-Constant-Voltage-Current-p-946751.html?p=PA11121233669201502E) -- The unit being reprogrammed
 * [CP2102](http://www.banggood.com/Wholesale-USB-To-TTL-or-COM-Converter-Module-buildin-in-CP2102-New-p-27989.html?p=PA11121233669201502E) -- A usb-to-serial TTL-level
 * [STLink V2](http://www.aliexpress.com/item/FREE-SHIPPING-ST-Link-V2-stlink-mini-STM8STM32-STLINK-simulator-download-programming-With-Cover/1766455290.html) -- programmer for the STM8S microcontroller
 
@@ -42,21 +48,11 @@ Software needed:
 
 These were done by flex, the discussion can be seen in the EEVBlog forum (link at the bottom).
 
-[B3603 Board Schematics in PDF (top and bottom)](docs/B3603_BoardSchematics.pdf)
-
-Bottom board schematics:
-
-![B3603 Bottom Board Schematics](docs/B3603_BottomBoardSchematics.png)
 
 Top board schematics:
 
 ![B3603 Top Board Schematics](docs/B3603_TopBoardSchematics.png)
 
-## Regulator Board (bottom)
-
-![Bottom Board Side 1](docs/BottomBoardSide1.jpg)
-
-![Bottom Board Side 2](docs/BottomBoardSide2.jpg)
 
 ## Control Board (top)
 
