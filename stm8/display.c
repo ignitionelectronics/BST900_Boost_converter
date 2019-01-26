@@ -23,7 +23,6 @@
 #include "config.h"
 
 #include <string.h>
-extern cfg_system_t default_cfg_system;
 static uint8_t Display_idx;
 static uint8_t Display_data[4];
 static uint8_t Pending_display_data[4];
@@ -95,7 +94,7 @@ void display_refresh(void)
 		memcpy(Display_data, Pending_display_data, sizeof(Display_data));
 		Pending_update = 0;
 		timer = DFLT_DISPLAY_REFRESH;
-		control_fan(&default_cfg_system);		//Update the fan PWM control each time the display updates
+		control_fan();		//Update the fan PWM control each time the display updates
 #ifdef DEBUG
 		debug_pending_display();
 #endif

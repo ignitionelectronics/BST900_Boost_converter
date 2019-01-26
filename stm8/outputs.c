@@ -24,7 +24,7 @@
 
 #include "stm8s.h"
 
-#define PWM_VAL 0x2000
+#define PWM_VAL 0x2000	//Gives PWM frequency of 1.591kHz
 #define PWM_HIGH (PWM_VAL >> 8)
 #define PWM_LOW (PWM_VAL & 0xFF)
 
@@ -40,7 +40,7 @@ void pwm_init(void)
 {
 	/* Timer 1 Channel 1 for Iout control */
 	TIM1_CR1 = 0x10; // Down direction
-	TIM1_ARRH = PWM_HIGH; // Reload counter = 16384
+	TIM1_ARRH = PWM_HIGH; // Reload counter = 8192
 	TIM1_ARRL = PWM_LOW;
 	TIM1_PSCRH = 0; // Prescaler 0 means division by 1
 	TIM1_PSCRL = 0;
@@ -60,7 +60,7 @@ void pwm_init(void)
 	TIM1_BKR = 0x80;       //  Enable the main output.
 	
 	/* Timer 2 Channel 1 for Vout control */
-	TIM2_ARRH = PWM_HIGH; // Reload counter = 16384
+	TIM2_ARRH = PWM_HIGH; // Reload counter = 8192
 	TIM2_ARRL = PWM_LOW;
 	TIM2_PSCR = 0; // Prescaler 0 means division by 1
 	TIM2_CR1 = 0x00;
@@ -143,11 +143,12 @@ INLINE void control_current(cfg_output_t *cfg, cfg_system_t *sys)
 	TIM1_CR1 |= 0x01; // Enable timer
 }
 
-INLINE void control_fan(cfg_system_t *sys)
+INLINE void control_fan()
 {
-	uint16_t ctr = pwm_from_set(state.cout, &sys->fout_pwm);	//Calculate PWM from current measured by adc
-	TIM1_CCR3H = ctr >> 8;
-	TIM1_CCR3L = ctr & 0xFF;
+	uint8_t ctr = (state.cout > MIN_FAN_CURRENT) ? ((state.cout >> 8)<< 2) | 0x03 : 0;	//Start fan at 2A  full speed by 8A
+	if (state.cout > MAX_FAN_CURRENT) ctr = 0xff;
+	TIM1_CCR3H = ctr;
+	TIM1_CCR3L = ctr;
 	TIM1_CR1 |= 0x01; // Enable timer
 }
 
