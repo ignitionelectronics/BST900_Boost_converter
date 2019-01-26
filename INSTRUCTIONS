@@ -6,10 +6,10 @@ NOOOO, better this:
 stm8flash -c stlinkv2 -p stm8s003f3 -u
 
 Reading the flash
-stm8flash -c stlinkv2 -p stm8s003f3 -s flash -r b3603_read.ihx
+stm8flash -c stlinkv2 -p stm8s003f3 -s flash -r bst900_read.ihx
 
-Writting the flash
-stm8flash -c stlinkv2 -p stm8s003f3 -s flash -w b3603.ihx
+Writing the flash
+stm8flash -c stlinkv2 -p stm8s003f3 -s flash -w bst900.ihx
 
 Important:
 To write the flash, disconnect it from the power.
