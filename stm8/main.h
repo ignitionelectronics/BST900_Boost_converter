@@ -3,6 +3,8 @@
 
 #define BST900		//Uncomment if building for BST400 boost converters
 
+#define CRLF	"\n"	//Use \n for Linux \r\n for Windows
+
 #include "display.h"
 #include <stdint.h>
 #include <stdbool.h>

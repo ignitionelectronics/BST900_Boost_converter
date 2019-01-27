@@ -81,7 +81,7 @@ void write_calibration(calibrate_t *val  OPTIONALARG(const char *tag))
         uart_write_str(tag);
     }
 #endif
-    uart_write_str("\r\n");
+    uart_write_crlf();
 }
 
 bool handle_set_name(const char *name)
@@ -105,7 +105,7 @@ bool handle_set_name(const char *name)
 
 	uart_write_str("SNAME: ");
 	uart_write_str((const char*)cfg_system.name);
-	uart_write_str("\r\n");
+	uart_write_crlf();
 
     return true;
 }
@@ -115,7 +115,7 @@ void autocommit(void)
 	if (cfg_system.autocommit) {
 		commit_output();
 	} else {
-		uart_write_str("OFF\r\n");
+		uart_write_str("OFF" CRLF);
 	}
 }
 
@@ -127,12 +127,12 @@ bool set_output(const char *s)
 	if (s[0] == '0') {
 		cfg_system.output = 0;
 #ifdef VERBOSE
-		uart_write_str("OFF\r\n");
+		uart_write_str("OFF" CRLF);
 #endif
 	} else if (s[0] == '1') {
 		cfg_system.output = 1;
 #ifdef VERBOSE
-		uart_write_str("ON\r\n");
+		uart_write_str("ON" CRLF);
 #endif
 	} else {
         return false;
@@ -195,13 +195,13 @@ bool set_autocommit(const char *arg)
 	if (strcmp(arg, "1") == 0 || strcmp(arg, "YES") == 0) {
 		cfg_system.autocommit = 1;
 #ifdef VERBOSE
-		uart_write_str("YES\r\n");
+		uart_write_str("YES" CRLF);
 #endif
         return true;
 	} else if (strcmp(arg, "0") == 0 || strcmp(arg, "NO") == 0) {
 		cfg_system.autocommit = 0;
 #ifdef VERBOSE
-		uart_write_str("NO\r\n");
+		uart_write_str("NO" CRLF);
 #endif
         return true;
 	} else {
@@ -214,13 +214,13 @@ bool set_default(const char *arg)
 	if (strcmp(arg, "1") == 0 || strcmp(arg, "YES") == 0) {
 		cfg_system.default_on = 1;
 #ifdef VERBOSE
-		uart_write_str("YES\r\n");
+		uart_write_str("YES" CRLF);
 #endif
         return true;
 	} else if (strcmp(arg, "0") == 0 || strcmp(arg, "NO") == 0) {
 		cfg_system.default_on = 0;
 #ifdef VERBOSE
-		uart_write_str("NO\r\n");
+		uart_write_str("NO" CRLF);
 #endif
         return true;
 	} else {
@@ -254,7 +254,7 @@ void write_str(const char *prefix, const char *val)
 {
 	uart_write_str(prefix);
 	uart_write_str(val);
-	uart_write_str("\r\n");
+	uart_write_crlf();
 }
 
 void write_onoff(const char *prefix, uint8_t on)
@@ -266,7 +266,7 @@ void write_millivalue(const char *prefix, uint16_t millival)
 {
 	uart_write_str(prefix);
 	uart_write_millivalue(millival);
-	uart_write_str("\r\n");
+	uart_write_crlf();
 }
 void write_raw_millivalue(const char *prefix, uint16_t millival, uint16_t rawval)
 {
@@ -274,20 +274,20 @@ void write_raw_millivalue(const char *prefix, uint16_t millival, uint16_t rawval
 	uart_write_millivalue(millival);
 	uart_write_ch(' ');
 	uart_write_int(rawval);
-	uart_write_str("\r\n");
+	uart_write_crlf();
 }
 
 void write_int(const char *prefix, uint16_t val)
 {
 	uart_write_str(prefix);
 	uart_write_int(val);
-	uart_write_str("\r\n");
+	uart_write_crlf();
 }
 
 //  command handlers
 bool handle_system(const char *arg)
 {
-    uart_write_str("M: " MODEL "\r\n" "V: " FW_VERSION "\r\n");
+    uart_write_str("M: " MODEL CRLF "V: " FW_VERSION CRLF);
     write_str("N: ", (const char*)cfg_system.name);
     write_onoff("O: ", cfg_system.default_on);
     write_onoff("AC: ", cfg_system.autocommit);
@@ -354,7 +354,7 @@ bool handle_factory(const char *arg)
 #ifdef DEBUG
 bool handle_stuck(const char *arg)
 {
-    uart_write_str("STUCK\r\n");
+    uart_write_str("STUCK" CRLF);
     uart_write_flush();
     while(1); // Induce watchdog reset
     return true;
@@ -431,7 +431,7 @@ bool handle_command_help(const char*arg)
         uart_write_ch('\t');
         uart_write_str(commandhandlers[i].helpmessage);
 #endif
-        uart_write_str("\r\n");
+        uart_write_crlf();
     }
     for (int i = 0 ; i < sizeof(calibrationhandlers)/sizeof(struct calcommand) ; i++)
     {
@@ -441,7 +441,7 @@ bool handle_command_help(const char*arg)
         uart_write_ch('\t');
         uart_write_str(calibrationhandlers[i].helpmessage);
 #endif
-        uart_write_str("\r\n");
+        uart_write_crlf();
     }
     return true;
 }
@@ -474,9 +474,9 @@ void process_input()
         }
     }
     if (ok)
-        uart_write_str("OK\r\n");
+        uart_write_str("OK"  CRLF);
     else
-        uart_write_str("E!\r\n");
+        uart_write_str("E!"  CRLF);
 
 	uart_read_len = 0;
 	read_newline = 0;
@@ -547,7 +547,7 @@ void read_state(void)
 	if (state.pc3 != tmp) {
 		uart_write_str("PC3 is now ");
 		uart_write_ch('0' + tmp);
-		uart_write_str("\r\n");
+		uart_write_crlf();
 		state.pc3 = tmp;
 	}
 #endif
@@ -592,13 +592,13 @@ void ensure_afr0_set(void)
 	if ((OPT2 & 1) == 0) {
 		uart_flush_writes();
 		if (eeprom_set_afr0()) {
-			uart_write_str("reboot\r\n");
+			uart_write_str("reboot" CRLF);
 			uart_flush_writes();
 			iwatchdog_init();
 			while (1); // Force a reset in a few msec
 		}
 		else {
-			uart_write_str("E!\r\n");
+			uart_write_str("E!" CRLF);
 		}
 	}
 }
@@ -616,7 +616,7 @@ int main()
 
 	config_load();
 
-	uart_write_str("\r\n" MODEL " V:" FW_VERSION "\r\n");
+	uart_write_str(CRLF MODEL " V:" FW_VERSION CRLF);
 
 	ensure_afr0_set();
 

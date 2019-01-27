@@ -54,7 +54,7 @@ void pwm_init(void)
 	/* Timer 1 Channel 3 for Fan Control */
 	TIM1_CCMR3 = 0x70;    //  Set up to use PWM mode 2.
 	TIM1_CCER2 = 0x03;    //  Output is enabled for channel 3, active low
-	TIM1_CCR3H = 0x00;      //  Start with the PWM signal off
+	TIM1_CCR3H = 0x30;      //  Start with the PWM signal on to prove the fan works
 	TIM1_CCR3L = 0x00;	
 	
 	TIM1_BKR = 0x80;       //  Enable the main output.
@@ -122,7 +122,7 @@ INLINE void control_voltage(cfg_output_t *cfg, cfg_system_t *sys)
     uart_write_millivalue(cfg->vset);
     uart_write_ch(' ');
 	uart_write_int(ctr);
-	uart_write_str("\r\n");
+	uart_write_crlf();
 
 	TIM2_CCR1H = ctr >> 8;
 	TIM2_CCR1L = ctr & 0xFF;
@@ -136,7 +136,7 @@ INLINE void control_current(cfg_output_t *cfg, cfg_system_t *sys)
     uart_write_millivalue(cfg->cset);
     uart_write_ch(' ');
 	uart_write_int(ctr);
-	uart_write_str("\r\n");
+	uart_write_crlf();
 
 	TIM1_CCR1H = ctr >> 8;
 	TIM1_CCR1L = ctr & 0xFF;
