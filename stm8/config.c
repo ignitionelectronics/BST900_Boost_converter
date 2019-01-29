@@ -40,6 +40,7 @@ cfg_system_t default_cfg_system = {
 	.version = SYSTEM_CFG_VERSION,
 	.name = "Unnamed",
 	.default_on = 0,
+	.echo = 0,
 	.output = 0,
 	.autocommit = 1,
 

@@ -190,43 +190,51 @@ bool set_current_arg(const char *arg)
     return set_current(parse_set_value(arg));
 }
 
-bool set_autocommit(const char *arg)
+
+bool set_option(uint8_t *opt, const char *arg)
 {
 	if (strcmp(arg, "1") == 0 || strcmp(arg, "YES") == 0) {
-		cfg_system.autocommit = 1;
 #ifdef VERBOSE
 		uart_write_str("YES" CRLF);
 #endif
+		*opt=1;
         return true;
 	} else if (strcmp(arg, "0") == 0 || strcmp(arg, "NO") == 0) {
-		cfg_system.autocommit = 0;
 #ifdef VERBOSE
 		uart_write_str("NO" CRLF);
 #endif
+		*opt=0;
         return true;
 	} else {
 		return false;
 	}
 }
 
+bool set_autocommit(const char *arg)
+{
+	return set_option(&cfg_system.autocommit, arg);
+}
+
+/* Enable/Disable Default start at power on
+* Enables output immediately on power on
+* 
+*/
 bool set_default(const char *arg)
 {
-	if (strcmp(arg, "1") == 0 || strcmp(arg, "YES") == 0) {
-		cfg_system.default_on = 1;
-#ifdef VERBOSE
-		uart_write_str("YES" CRLF);
-#endif
-        return true;
-	} else if (strcmp(arg, "0") == 0 || strcmp(arg, "NO") == 0) {
-		cfg_system.default_on = 0;
-#ifdef VERBOSE
-		uart_write_str("NO" CRLF);
-#endif
-        return true;
-	} else {
-		return false;
-	}
+	return set_option(&cfg_system.default_on, arg);
 }
+
+/* Enable/Disable command echo
+* Repeats command with "OK" to enable connected device to
+* confirm which command has been executed.
+* 
+*/
+bool set_echo(const char *arg)
+{
+	return set_option(&cfg_system.echo, arg);
+}
+
+
 
 bool set_calibration(const char*cmd, const char *arg, calibrate_t*cal)
 {
@@ -290,6 +298,7 @@ bool handle_system(const char *arg)
     uart_write_str("M: " MODEL CRLF "V: " FW_VERSION CRLF);
     write_str("N: ", (const char*)cfg_system.name);
     write_onoff("O: ", cfg_system.default_on);
+    write_onoff("E: ", cfg_system.echo);
     write_onoff("AC: ", cfg_system.autocommit);
     return true;
 }
@@ -402,6 +411,7 @@ struct command commandhandlers[] = {
     { "CURRENT", 7, set_current_arg, OPTIONAL("set output current") },
     { "AUTOCOMMIT", 10, set_autocommit, OPTIONAL("enable/disable auto commit") },
     { "DEFAULT", 7, set_default, OPTIONAL("enable/disable output on power up") },
+    { "ECHO", 4, set_echo, OPTIONAL("enable/disable command echo") },
     { "HELP", 10, handle_command_help, OPTIONAL("show available commands") },
 };
 
@@ -450,8 +460,8 @@ void process_input()
     bool ok = false;
 	// Eliminate the CR/LF character
 	uart_read_buf[uart_read_len-1] = 0;
-
-    for (int i = 0 ; i < sizeof(commandhandlers)/sizeof(struct command) ; i++)
+	int i;
+    for ( i = 0 ; i < sizeof(commandhandlers)/sizeof(struct command) ; i++)
     {
         int cmdlen = commandhandlers[i].commandsize;
         const char *arg = NULL;
@@ -460,10 +470,14 @@ void process_input()
         if (strncmp((const char*)uart_read_buf, commandhandlers[i].command, cmdlen) == 0)
         {
             ok = commandhandlers[i].handler(arg);
+            if (ok && cfg_system.echo) {
+				uart_write_str(commandhandlers[i].command);
+				uart_write_str(" - ");
+			}
         }
     }
     if (strncmp((const char*)uart_read_buf, "CAL_", 4) == 0) {
-        for (int i = 0 ; i < sizeof(calibrationhandlers)/sizeof(struct calcommand) ; i++)
+        for ( i = 0 ; i < sizeof(calibrationhandlers)/sizeof(struct calcommand) ; i++)
         {
             int cmdlen = calibrationhandlers[i].commandsize;
             const char *arg = NULL;
@@ -474,7 +488,7 @@ void process_input()
         }
     }
     if (ok)
-        uart_write_str("OK"  CRLF);
+        uart_write_str("OK" CRLF);
     else
         uart_write_str("E!"  CRLF);
 

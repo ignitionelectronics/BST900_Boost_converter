@@ -40,6 +40,7 @@ typedef struct {
 	uint8_t version;
 	uint8_t name[17];
 	uint8_t default_on;
+	uint8_t echo;
 	uint8_t output;
 	uint8_t autocommit;
 
