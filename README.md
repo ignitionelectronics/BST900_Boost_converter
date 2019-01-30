@@ -1,19 +1,50 @@
 # BST900
+### Control of Boost Converter over serial interface
 
 This is a fork of B3603 originally by [baruch](https://github.com/baruch/b3603) and later forked by iafilius and frmaioli
 This fork extends the code to support the BST900 and BST400 boost converters from MingHe.
-BST900 and BST400 have a different architecture to the original B3603. They have a different architecture on their bottom boards, but they all use the same  STM8 based microcontroller top board albeit running slightly different firmware.
+The object of the BST900 alternative firmware is to allow control of the boost converter over a serial interface. In my case this is to control the charge current of my home battery system
+
+The plugin top board of BST900 has a convenient unused serial socket (CNOS logic levels), which can be easily connected to a suitable controller. (In my case an ESP8266).
+BST900 and BST400 have a different architecture to the original B3603. They use a UCC3803 Current Mode PWM controller on their bottom boards, but they all use the same  STM8 based microcontroller top board albeit running slightly different firmware.
 I believe the B3603 code should be able to be adapted to drive the BST range.
 
 
 The project is a work in progress. There is no code to try out just yet. I am still awaiting delivery of my STM8 development boards.
 
+## Alternatives to this firmware
+There is another way to control the current delivered by a BST900 without having to change the firmware. It is possible to set the constant current limit using either an analogue or digital potentiometer.
+
+Looking at the BST900. The fourth pin down on the left hand row is the pin used to control the Constant Current limit of UCC38803. This pin carries a digital PWM signal from the top board. However the UCC3803
+ will work equally well with an analogue voltage on this pin.
+ 
+ ##### Procedure
+ * Put the top board on long pin header sockets to raise it up.
+ * Bend Pin 4 of the left hand header out so this pin is open circuited.
+ * Insert a wire into Pin 4 of the socket on the lower board and connect to the wiper of a 10k Potentiometer (or Digipot)
+ * Connect one side of the potentiometer to GND which is found 2nd terminal on the left in the row of 4 immediately to the left of the buttons.
+ * Connect the other side of the potentiometer to +3.3V via a resistor of 15-20k. 3.3V is found at the right hand terminal of the row of 4.
+ 
+ That's it.  Hopefully it will not blow up!  It is probably a good idea to feed the BST900 with a constant current source while testing it out.
+
+
 ## BST900 Architecture
 
-BST900 is based on the UCC3803 Current Mode PWM Controller from TI. It boosts voltages up to 120V and operates at currents up to 15A. (Although I think the cooling would need significant upgrading before getting anywhere near that current.)
-The ouput voltage is controlled by a PWM signal on pin5 of the upper board in exactly the same way as B3603. However the constant current mode operates differently to B3603.
-While B3603 puts a PWM signal on Pin 4 of the top board whose duty cycle is proportional to the constant current limit, BST900 applies a PWM signal whose width dynamically tracks the measured output current sense.
+BST900 is based on the UCC3803 Current Mode PWM Controller from TI. It boosts voltages up to 120V and operates at currents up to 15A.
+The output voltage is controlled by a PWM signal on pin5 of the upper board in exactly the same way as B3603. Pin4 carries a PWM signal whose width determines the Constant Current limit.
 
+![BST900](docs/BST900_Top_View.png)
+
+![BST900 Bottom View](docs/BST900_Bottom_View.png)
+
+
+## Improved Cooling
+While the manufacturer specifies the BST900 as operating at up to 15A looking at the size of the supplied heatsink I was not too hopeful about it actually working for long at that current.
+It is fairly easy to uprate the cooling by removing the MOSFET and diode pair and mounting them on the lower side of the PCB with a much larger heat sink. BST900 also has an unused socket for a second diode 
+pair. Adding a second diode will more than halve the heat dissipation of each diode since the lower current will mean the diode is operating at a lower forward voltage. If adding a diode be sure to make sure they are both of the
+ same type.
+ 
+ ![BST900 Improved Cooling](docs/BST900_Improved_Cooling.png)
 
 ## ToDo
 
