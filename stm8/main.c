@@ -581,19 +581,23 @@ void read_state(void)
 				state.cout_raw = val;
 				// Calculation: val * cal_cout_a * 3.3 / 1024 - cal_cout_b
 				state.cout = adc_to_volt(val, &cfg_system.cout_adc);
+				
+#ifdef CLOSED_LOOP_CC
 				/* Closed loop feedback to adjust Current PWM based on results of last
 				 * adc result. If measured current is greater than CC target then decrement PWM pulse
 				 * , if less, then increment it. 
 				 * Should cause constant current to 'home in' onto its target.
 				 * This fits closer to the observed behaviour of the stock firmware where the pulse
 				 * width narrows in CV mode and expands in CC node
-				 * */
-				uint16_t arrH = TIM1_ARRH;
-				uint16_t arr = TIM1_ARRL | (arrH<<8);
-				if (state.cout > arr) arr = (arr == 0) ? 0 : arr - 1;
-				if (state.cout < arr) arr = (arr == 65535) ? arr + 1 : 65535;
-				TIM1_ARRH = (arr>8);
-				TIM1_ARRL = (arr & 0xFF);
+				 *  */
+				uint16_t ccr1H = TIM1_CCR1H;
+				uint16_t ccr1 = TIM1_CCR1L | (ccr1H<<8);
+				if (state.cout > cfg_output.cset) ccr1 = (ccr1 == 0) ? 0 : ccr1 - 1;
+				if (state.cout < cfg_output.cset) ccr1 = (ccr1 == PWM_VAL) ? ccr1 + 1 : PWM_VAL;
+				TIM1_CCR1H = (ccr1>8);
+				TIM1_CCR1L = (ccr1 & 0xFF);
+#endif
+				
 				ch = 3;
 				break;
 			case 3:

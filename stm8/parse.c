@@ -23,6 +23,9 @@
 // If USE MILLI is defined the uart will expect to receive values like 12.345, otherwise it will be 12345
 // Using now not defined to save space.
 
+#define USE_MILLI
+
+
 #ifdef USE_MILLI
 uint32_t _parse_num(const char *s, const char **stop, uint8_t *digits_seen)
 {

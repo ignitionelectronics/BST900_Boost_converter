@@ -2,8 +2,9 @@
 #define MAIN_H
 
 #define BST900		//Uncomment if building for BST400 boost converters
+//#define CLOSED_LOOP_CC	//Comment to disable experimental Closed Lop Constant Current Control
 
-#define CRLF	"\n"	//Use \n for Linux \r\n for Windows
+#define CRLF	"\r\n"	//Use \n for Linux \r\n for Windows
 
 #include "display.h"
 #include <stdint.h>

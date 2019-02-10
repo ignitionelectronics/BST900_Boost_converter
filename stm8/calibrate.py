@@ -26,10 +26,10 @@ class B3603(object):
             self.clear_input()
             s = self.system()
             print 'OPEN "%s"' % s
-            if s  == 'M: B3603':
+            if  s =='M: BST900':
                 return True
             else:
-                print 'Couldnt read the right model out of the serial port, got "%s", expected to see "MODEL: B3603"' % s
+                print ('Couldnt read the right model out of the serial port, got "%s", expected to see "M: BST900"' % s)
         else:
             return False
 
@@ -38,7 +38,7 @@ class B3603(object):
 
     def ser_write(self, data):
         if self.debug:
-            print 'DEBUG OUT:', data
+            print ('DEBUG OUT:', data)
         for d in data:
             self.s.write(d)
 
@@ -59,7 +59,7 @@ class B3603(object):
         lines = [line.strip() for line in data.split('\r')]
         if self.debug:
             for line in lines:
-                print 'DEBUG IN', line
+                print ('DEBUG IN', line)
         return lines
 
     def system(self):
@@ -174,7 +174,7 @@ class Multimeter(object):
         avg = calc_average(data)
         stddev = calc_stddev(data, avg)
         if stddev > 0.1:
-            print 'Multimeter samples vary too much, stddev=%f, data:' % stddev, data
+            print ('Multimeter samples vary too much, stddev=%f, data:' % stddev, data)
             return None
         return avg
 
@@ -183,7 +183,7 @@ class Multimeter(object):
             s = self.sample1(count)
             if s != None:
                 return s
-            print 'Failed to read stable value, trying again, maybe'
+            print ('Failed to read stable value, trying again, maybe')
             time.sleep(1)
         return None
 
@@ -209,59 +209,58 @@ def lse(xdata, ydata):
 
 def calibration_voltage(auto):
     psu = B3603(sys.argv[3])
+    print 'Attach multimeter to open circuit output of BST'
+    print 'Set input voltage to between 10 and 11V'
     if not psu.open():
-        print 'Failed to open serial port to B3603 on serial %s' % sys.argv[2]
+        print ('Failed to open serial port to device on serial %s' % sys.argv[2])
         return
 
     if auto == True:
         dmm = Multimeter(sys.argv[3], sys.argv[4])
         if not dmm.open():
-            print 'Failed to open serial port to multimeter on serial %s model %s' % (sys.argv[3], sys.argv[4])
+            print ('Failed to open serial port to multimeter on serial %s model %s' % (sys.argv[3], sys.argv[4]))
             psu.close()
             return
 
-    #B3603 Limits
-    vin = (psu.status()['vin'])*1000 #mV
+    #BST900 Limits
+    vin = (psu.status()['vin']) #V
     NUM_STEPS = 10
-    MIN_VOLTAGE = 10 #mV
-    if (vin - 1000) > 35000:
-        MAX_VOLTAGE = 35000
-    else:
-        MAX_VOLTAGE = vin - 1000
-    MAX_VOLTAGE = 4000 #(in fact can be good to regulate till lower voltage to have better precision in low values: <1V)
-    STEP_SIZE = int((MAX_VOLTAGE - MIN_VOLTAGE) / NUM_STEPS) #mV
-    print 'PSU Input voltage is %s mV, will use %d steps between %s mV and %s mV' % (vin, NUM_STEPS, MIN_VOLTAGE, MAX_VOLTAGE)
+    MIN_VOLTAGE = vin + 2 #V
+    MAX_VOLTAGE = 60
+    STEP_SIZE = round(((MAX_VOLTAGE - MIN_VOLTAGE) / NUM_STEPS),2) #V
+    print ('PSU Input voltage is %s V, will use %d steps between %s V and %s V' % (vin, NUM_STEPS, MIN_VOLTAGE, MAX_VOLTAGE))
 
-    if STEP_SIZE < 10:
-        print 'Step size is below 10mV, cannot test'
+    if STEP_SIZE < 0.010:
+        print ('Step size is below 10mV, cannot test')
         return
 
     psu.output_on()
-    psu.current(200) #200mA
+    psu.current(0.20) #200mA
     psu.voltage(MIN_VOLTAGE)
 
     pwm_data = []
     adc_data = []
     vout_data = []
     valid = True
-
+    
+    
     for step in xrange(NUM_STEPS):
-        volt = MIN_VOLTAGE + step * STEP_SIZE
-        print step , '. Setting voltage to', volt, 'mV'
+        volt = round((MIN_VOLTAGE + step * STEP_SIZE),2)
+        print (step , '. Setting voltage to', volt, 'V')
         (pwm_vout, pwm_cout) = psu.voltage(volt)
         # Wait 1 second for things to stabilize
         time.sleep(1)
         if auto == True:
             vout = dmm.sample3(3) # Use three samples
         else:
-            vout = input("Enter the Vout measuerd with Multimeter in mV: ")  
+            vout = input("Enter the Vout measured with Multimeter in mV: ")  
 
         if vout == None:
-            print 'Failed to get vout'
+            print ('Failed to get vout')
             valid = False
             break
-        if vin - vout < 500:
-            print 'Vout is %s and Vin is %s mV, this means that pwm calibration is saturated and the test will be meaningless' % (vout, vin)
+        if vout < vin:
+            print ('Vout is %s and Vin is %s mV, this means that pwm calibration is saturated and the test will be meaningless' % (vout, vin))
             valid = False
             break
         rstatus = psu.rstatus()
@@ -272,62 +271,65 @@ def calibration_voltage(auto):
         pwm_data.append(pwm_vout)
         adc_data.append(adc_vout)
         vout_data.append(int(vout))
-        print 'Step %d Set voltage %f mV Read voltage %f mV PWM %s ADC %s (%s)' % (step, volt, vout, pwm_vout, adc_vout, vout_calc)
+        print ('Step %d Set voltage %f mV Read voltage %f mV PWM %s ADC %s (%s)' % (step, volt, vout, pwm_vout, adc_vout, vout_calc))
 
-    print psu.output_off()
+    print (psu.output_off())
 
     if not valid:
-        print 'Test is invalid, calibration cancelled'
+        print ('Test is invalid, calibration cancelled')
         return
 
-    print 'ADC'
+    print ('ADC')
     val = lse(adc_data, vout_data)
     adc_a = int(val[0]*65536)
     adc_b_tmp = val[1]
     if adc_b_tmp < 0:
         adc_b_tmp = -adc_b_tmp
     else:
-        print 'Expected ADC_B to be negative... for some reason it\'ts not'
+        print ('Expected ADC_B to be negative... for some reason it\'ts not')
         adc_b_tmp = 0
     adc_b = int(adc_b_tmp*65536)
-    print val, adc_a, adc_b
-    print psu.command('CAL_VOUTADC %d %d' % (adc_a, adc_b))
-    print 'PWM'
+    print (val, adc_a, adc_b)
+    print (psu.command('CAL_VOUTADC %d %d' % (adc_a, adc_b)))
+    print ('PWM')
     val = lse(vout_data, pwm_data)
     pwm_a = int(val[0]*65536)
     pwm_b = int(val[1]*65536)
-    print val, pwm_a, pwm_b
-    print psu.command('CAL_VOUTPWM %d %d' % (pwm_a, pwm_b))
+    print (val, pwm_a, pwm_b)
+    print (psu.command('CAL_VOUTPWM %d %d' % (pwm_a, pwm_b)))
 
     psu.close()
 
 def calibration_current(auto):
     psu = B3603(sys.argv[3])
+    print 'Attach multimeter in current mode in series with a dummy load  of around 50ohm to output of BST'
+    print 'Set input voltage to between 10 and 11V. Nominal output Voltage will be 25V'
+    print 'BST will be opearating in Constant Current mode so actual output voltage should be between Vin and 25V'
     if not psu.open():
-        print 'Failed to open serial port to B3603 on serial %s' % sys.argv[2]
+        print ('Failed to open serial port to device on serial %s' % sys.argv[2])
         return
 
     if auto == True:
         dmm = Multimeter(sys.argv[3], sys.argv[4])
         if not dmm.open():
-            print 'Failed to open serial port to multimeter on serial %s model %s' % (sys.argv[3], sys.argv[4])
+            print ('Failed to open serial port to multimeter on serial %s model %s' % (sys.argv[3], sys.argv[4]))
             psu.close()
             return
 
-    #B3603 Limits
+    #BST900 Limits
     NUM_STEPS = 10
-    MIN_CURRENT = 1 #mA
-    #MAX_CURRENT = 3000 #mA
-    MAX_CURRENT = 1000 #mA
-    STEP_SIZE = int((MAX_CURRENT - MIN_CURRENT) / NUM_STEPS) #mA
-    print 'It will use %d steps between %s mA and %s mA' % (NUM_STEPS, MIN_CURRENT, MAX_CURRENT)
+    MIN_CURRENT = 0.10 #A
+    #MAX_CURRENT = 0.30 #A
+    MAX_CURRENT = 0.30 #A
+    STEP_SIZE = round(((MAX_CURRENT - MIN_CURRENT) / NUM_STEPS),2) #A
+    print ('It will use %d steps between %s A and %s A' % (NUM_STEPS, MIN_CURRENT, MAX_CURRENT))
 
-    if STEP_SIZE < 10:
-        print 'Step size is below 10mA, cannot test'
+    if STEP_SIZE < 0.01:
+        print ('Step size is below 10mA, cannot test')
         return
 
     psu.output_on()
-    psu.voltage(3000) #3V (Should be enough for Curt Circuit Test. Take care...) 
+    psu.voltage(25.00) #25V (Should be enough for Curt Circuit Test. Take care...) 
     psu.current(MIN_CURRENT)
 
     pwm_data = []
@@ -336,19 +338,19 @@ def calibration_current(auto):
     valid = True
 
     for step in xrange(NUM_STEPS):
-        curr = MIN_CURRENT + step * STEP_SIZE
-        print step , '. Setting current to', curr, 'mA'
+        curr = round((MIN_CURRENT + step * STEP_SIZE),2)
+        print (step , '. Setting current to', curr, 'A')
         (pwm_vout, pwm_cout) = psu.current(curr)
         # Wait 1 second for things to stabilize
         time.sleep(1)
         if auto == True:
-            print 'Sorry, this functionality was not implemented yet'
+            print ('Sorry, this functionality was not implemented yet')
             return
         else:
-            cout = input("Enter the Iout measuerd with Multimeter in mA: ")  
+            cout = input("Enter the Iout measured with Multimeter in mA: ")  
 
         if cout == None:
-            print 'Failed to get Iout'
+            print ('Failed to get Iout')
             valid = False
             break
         rstatus = psu.rstatus()
@@ -359,60 +361,60 @@ def calibration_current(auto):
         pwm_data.append(pwm_cout)
         adc_data.append(adc_cout)
         cout_data.append(int(cout))
-        print 'Step %d Set current %f mA Read current %f mA PWM %s ADC %s (%s)' % (step, curr, cout, pwm_cout, adc_cout, cout_calc)
+        print ('Step %d Set current %f mA Read current %f mA PWM %s ADC %s (%s)' % (step, curr, cout, pwm_cout, adc_cout, cout_calc))
 
-    print psu.output_off()
+    print (psu.output_off())
 
     if not valid:
-        print 'Test is invalid, calibration cancelled'
+        print ('Test is invalid, calibration cancelled')
         return
 
-    print 'ADC'
+    print ('ADC')
     val = lse(adc_data, cout_data)
     adc_a = int(val[0]*65536)
     adc_b_tmp = val[1]
     if adc_b_tmp < 0:
         adc_b_tmp = -adc_b_tmp
     else:
-        print 'Expected ADC_B to be negative... for some reason it\'ts not'
+        print ('Expected ADC_B to be negative... for some reason it\'ts not')
         adc_b_tmp = 0
     adc_b = int(adc_b_tmp*65536)
-    print val, adc_a, adc_b
-    print psu.command('CAL_COUTADC %d %d' % (adc_a, adc_b))
+    print (val, adc_a, adc_b)
+    print (psu.command('CAL_COUTADC %d %d' % (adc_a, adc_b)))
     print
-    print 'PWM'
+    print ('PWM')
     val = lse(cout_data, pwm_data)
     pwm_a = int(val[0]*65536)
     pwm_b = int(val[1]*65536)
-    print val, pwm_a, pwm_b
-    print psu.command('CAL_COUTPWM %d %d' % (pwm_a, pwm_b))
+    print (val, pwm_a, pwm_b)
+    print (psu.command('CAL_COUTPWM %d %d' % (pwm_a, pwm_b)))
 
     psu.close()
 
 def calibration_init():
     psu = B3603(sys.argv[2])
     if not psu.open():
-        print 'Failed to open serial port to B3603 on serial %s' % sys.argv[2]
+        print 'Failed to open serial port to device on serial %s' % sys.argv[2]
 
 
     #Current
-    adc_a = int(0000.4860 * 65536)
-    adc_b = int(0173.3114 * 65536)
-    pwm_a = int(0002.0585 * 65536)
-    pwm_b = int(0368.0794 * 65536)
+    adc_a = int(0000.9964 * 65536)
+    adc_b = int(0)
+    pwm_a = int(0000.0946 * 65536)
+    pwm_b = int(0)
     print psu.command('CAL_COUTADC %d %d' % (adc_a, adc_b))
     print psu.command('CAL_COUTPWM %d %d' % (pwm_a, pwm_b))
 
     #Voltage
-    adc_a = int(0005.5681 * 65536)
-    adc_b = int(0580.6878 * 65536)
-    pwm_a = int(0000.1803 * 65536)
-    pwm_b = int(0111.7264 * 65536)
+    adc_a = int(0027.1149 * 65536)
+    adc_b = int(0)
+    pwm_a = int(0000.0371 * 65536)
+    pwm_b = int(0)
     print psu.command('CAL_VOUTADC %d %d' % (adc_a, adc_b))
     print psu.command('CAL_VOUTPWM %d %d' % (pwm_a, pwm_b))
 
     #Vin
-    print psu.command('CAL_VINADC %d %d' % (419300, 0))
+    print psu.command('CAL_VINADC %d %d' % (910000, 0))
     
     print 'First Calibration completed. Use the save command if you would like to keep it.'
     
@@ -424,6 +426,7 @@ def usage():
     print ' Automatic: %s -a <voltage|current> <b3603 serial> <multimeter serial> <multimeter model>' % sys.argv[0]
     print ' Manual:    %s -m <voltage|current> <b3603 serial>' % sys.argv[0]
     print ' Init:      %s -i <b3603 serial>' % sys.argv[0]
+    print 'Perform Voltage calibration first, then Current'
 
 def main():
     if len(sys.argv) < 3:
