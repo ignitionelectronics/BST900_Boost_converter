@@ -1,18 +1,20 @@
 # BST900
 ### Control of Boost Converter over serial interface
 
-This is a fork of B3603 originally by [baruch](https://github.com/baruch/b3603) and later forked by iafilius and frmaioli
+This is a fork of B3603 originally by [baruch](https://github.com/baruch/b3603) and later forked by iafilius and [frmaioli](https://github.com/frmaioli/b3603)
 This fork extends the code to support the BST900 and BST400 boost converters from MingHe.
 The object of the BST900 alternative firmware is to allow control of the boost converter over a serial interface. In my case this is to control the charge current of my home battery system
 
-The plugin top board of BST900 has a convenient unused serial socket (CNOS logic levels), which can be easily connected to a suitable controller. (In my case an ESP8266).
-BST900 and BST400 have a different architecture to the original B3603. They use a UCC3803 Current Mode PWM controller on their bottom boards, but they all use the same  STM8 based microcontroller top board albeit running slightly different firmware.
-I believe the B3603 code should be able to be adapted to drive the BST range.
+The plugin top board of BST900 has a convenient unused serial socket (3.3V logic levels), which can be easily connected to a suitable controller. (In my case an ESP8266).
+BST900 and BST400 have a different architecture to the original B3603. They use a UCC3803 Current Mode PWM controller on their bottom boards, but they use the same  STM8 based microcontroller top board albeit running slightly different firmware.
 
+### Status
+The project is a work in progress. It is functional. Control over the  BST900 using the serial interface is working, but it currently only supports output voltages to 65.5V.
 
-The project is a work in progress. There is no code to try out just yet. I am still awaiting delivery of my STM8 development boards.
+![BST900 with STM8 Development board](docs/BST900_with_STM8_development_board.png) The firmware may be loaded onto a BST900 top board, but because the stock firmware is read protected it is not possible to  save the stock firmware and revert back to it later. However it is possible to load the firmware onto an STM8 development board, and by hooking up
+the appropriate pins to the connector, run the firmware without the seven segment display or push buttons. The firmware can thereby be evaluated without making any irrevesible choices.
 
-## Alternatives to this firmware
+## Alternative to this firmware
 There is another way to control the current delivered by a BST900 without having to change the firmware. It is possible to set the constant current limit using either an analogue or digital potentiometer.
 
 Looking at the BST900. The fourth pin down on the left hand row is the pin used to control the Constant Current limit of UCC38803. This pin carries a digital PWM signal from the top board. However the UCC3803
@@ -38,43 +40,36 @@ The output voltage is controlled by a PWM signal on pin5 of the upper board in e
 ![BST900 Bottom View](docs/BST900_Bottom_View.png)
 
 
+## ToDo
+
+* Implement control for the cooling fan.  - Done
+* Rework Constant Current control to suit BST900. - Done
+* Implement a start at power on feature to suit my application for charging a home battery system. - Done
+* Recalibrate all measurements and PWM to suit BST900 - Done
+* Rework code to use a 10mV voltage resolution to allow voltages above 65535mV - In Progress
+
+
+## Components needed:
+* [BST900](https://www.aliexpress.com/item/DC-DC-BST900-0-15A-8-60V-To-10-120V-Boost-Converter-Power-Supply-Module-CC/32838432319.html) -- The unit being reprogrammed
+* [STM8 Development board](https://www.aliexpress.com/item/STM8S103F3P6-system-board-STM8S-STM8-development-board-minimum-core-board/32802517941.html) -- Enables firmware to be tried without losing the stock firmware.
+* [FT232RL](https://www.aliexpress.com/item/FT232RL-FT232-FTDI-USB-3-3V-5-5V-to-TTL-Serial-Adapter-Module-Mini-Port-for/32896631192.html) -- A usb-to-serial TTL-level
+* [STLink V2](https://www.aliexpress.com/item/Hot-Sale-ST-LINK-Stlink-ST-Link-V2-Mini-STM8-STM32-Simulator-Download-Programmer-Programming-With/32684040486.html) -- programmer for the STM8S microcontroller
+
+
+## Software needed:
+* [SDCC v 3.7.0] sudo apt install sdcc
+* [stm8flash](https://github.com/vdudouyt/stm8flash) -- STM8 flasher
+
 ## Improved Cooling
 While the manufacturer specifies the BST900 as operating at up to 15A looking at the size of the supplied heatsink I was not too hopeful about it actually working for long at that current.
-It is fairly easy to uprate the cooling by removing the MOSFET and diode pair and mounting them on the lower side of the PCB with a much larger heat sink. BST900 also has an unused socket for a second diode 
-pair. Adding a second diode will more than halve the heat dissipation of each diode since the lower current will mean the diode is operating at a lower forward voltage. If adding a diode be sure to make sure they are both of the
+It is fairly easy to uprate the cooling by removing the MOSFET and diode pair and mounting them on the lower side of the PCB with a much larger heat sink (use spacers to ensure no short circuit between the heatsink and PCB traces, 
+and make sure the Mosfet leads go to the correct places). 
+BST900 also has an unused socket for a second diode pair. Adding a second diode will more than halve the heat dissipation of each diode since the lower current will mean the diode is operating at a lower forward voltage. If adding a diode make sure they are both of the
  same type.
  
  ![BST900 Improved Cooling](docs/BST900_Improved_Cooling.png)
 
-## ToDo
-
-* Implement a PWM control for the cooling fan.
-* Rework Constant Current control to suit BST900. (May not be necessary)
-* Implement a start at power on feature to suit my application for charging a home battery system.
-* Recalibrate all measurements and PWM to suit BST900
-* Rework code to use a 10mV voltage resolution to allow voltages above 65535mV
-
-Original project page appears below.
-=============================================================================
-
-
-# B3603
-
-This project is about reverse engineering the B3603 control board and figuring
-out how it works, then it should be possible to create an alternative firmware.
-Either by driving it with another board on the same control points or by
-replacing the original firmware with one of my own.
-
-**Current state**: Working, it is functioning and serially controllable.
-
-Components needed:
-* [CP2102](http://www.banggood.com/Wholesale-USB-To-TTL-or-COM-Converter-Module-buildin-in-CP2102-New-p-27989.html?p=PA11121233669201502E) -- A usb-to-serial TTL-level
-* [STLink V2](http://www.aliexpress.com/item/FREE-SHIPPING-ST-Link-V2-stlink-mini-STM8STM32-STLINK-simulator-download-programming-With-Cover/1766455290.html) -- programmer for the STM8S microcontroller
-
-Software needed:
-* [SDCC v 3.7.0] sudo apt install sdcc
-* [stm8flash](https://github.com/vdudouyt/stm8flash) -- STM8 flasher
-  To compile you will need to install libgusb-dev. To build, run Make and after Make install.
+# Extracts from the Original project page.
 
 ## Schematics
 
@@ -86,32 +81,18 @@ Top board schematics:
 ![B3603 Top Board Schematics](docs/B3603_TopBoardSchematics.png)
 
 
-## Control Board (top)
-
-![Top Board Side 1](docs/TopBoardSide1.jpg)
-
-![Top Board Side 2](docs/TopBoardSide2.jpg)
-
-
-### MCU
-
-The MCU is an [STM8S003F3](http://www.st.com/web/catalog/mmc/FM141/SC1244/SS1010/LN2/PF251792). It is the TSSOP-20 package.
-
 ### Pinouts
 
 Lets name the different pinout components, left and right are as seen looking at the top board with the 7-segment display up:
 
 * MCU
-* Left connector -- 8 pins left side
-* Right connector -- 8 pins right side
-* Serial connector -- 4 pins at left most side
-* SWIM connector -- 4 pins at the bottom, just left of the buttons
-* 74HC595 #1 -- The one closest to the MCU
-* 74HC595 #2 -- The one furthest from the MCU
+* Left connector -- 8 pins left side, analogue and digital signals
+* Right connector -- 8 pins right side +5V power and analogue and digital Ground.
+* Serial connector -- 4 pins at left most side. 3.3V logic level
+* SWIM connector -- 4 pins at the bottom, just left of the buttons. Used to programme the STM8 chip
 
 #### Pinout from MCU
 
-![STM8S003F3 TSSOP20 pins](docs/STM8S003F3 pinout.png)
 
 | MCU pin | MCU Function | Board Connector | Board Connector Pin | Board Connector Name
 | ------- | -------------|-----------------|---------------------|-----
@@ -127,7 +108,7 @@ Lets name the different pinout components, left and right are as seen looking at
 | Pin 10 | SPI\_NSS / TIM2\_CH3 / PA3 (HS) | CV/CC leds |  | CV/CC leds
 | Pin 11 | PB5 (T) / I2C\_SDA / TIM1\_BKIN | Left connector | Pin 7 | CV/CC status
 | Pin 12 | PB4 (T) / I2C\_SCL / ADC\_ETR | Left connector | Pin 6 | Enable Output + Red (ON) led
-| Pin 13 | PC3 (HS) / TIM1\_CH3 [TLI] [TIM1_CH1N]| Left Connector | Pin 8 | Not connected
+| Pin 13 | PC3 (HS) / TIM1\_CH3 [TLI] [TIM1_CH1N]| Left Connector | Pin 8 | Fan Control
 | Pin 14 | PC4 (HS) / TIM1\_CH4 / CLK\_CCO / AIN2 / TIM1\_CH2N | Left connector | Pin 1 | Iout sense 16\*(0.01V + Iout\*0.05)
 | Pin 15 | PC5 (HS) / SPI\_SCK / TIM2\_CH1 | Left connector | Pin 5 | Vout set
 | Pin 16 | PC6 (HS) / SPI\_MOSI / TIM1\_CH1 | Left connector | Pin 4 | Iout set
@@ -137,47 +118,9 @@ Lets name the different pinout components, left and right are as seen looking at
 | Pin 20 | PD3 (HS) / AIN4 / TIM2\_CH2 / ADC\_ETR | Left connector | Pin 3 | Vin sense (Vin/16)
 
 
-The buttons are connected in a strange setup where all four are on two pins.
-
-The CV/CC leds are in serial with a lead between them throuh a 10K resistor to pin PA3, by changing the pin between Output HIGH, Output LOW and Input it is possible to make one of them on or both off.
-
-#### Bottom Board Interface
-
-The below was decoded by [bal00](http://www.reddit.com/r/arduino/comments/2so02f/can_anyone_recommend_a_cheap_cheerful_bench_power/cnrjdxo).
-
-![Control pinouts](docs/control_pinouts.png)
-
-Right side:
-
-* Top four (1-4) pins are GND
-* Next two (5-6) are Vcc +5V (seems wrong)
-* 7 is connected to MCU UART RX
-* 8 is connected to MCU UART TX
-
-Left side (Top to bottom):
-
-* Pin 1: Iout sense, 970mV/A + 140mV
-* Pin 2: Vout sense, 72mV/V + 42mV
-* Pin 3: Vin sense, 62mV/V
-* Pin 4: Iout control, 970mV/A + 140mV (PWM controlled, off when output off)
-* Pin 5: Vout control, 72mV/V + 42mV (PWM controlled, off when output off)
-* Pin 6: Enable control, 0V = output on, 5V = output off (Digitally controlled)
-* Pin 7: CC/CV sense, CV = 0.47V, CC = 2.5V
-* Pin 8: Connected to MCU pin 13 (PC3), unknown function
-
-#### Pinouts of 74HC595 chips
-
-There are two 74HC595 TSSOP16, these control the 4 digit 7 segment display, and possibly the leds as well. The 7 segment display has 12 pins and is controlled constantly to create a persistence-of-vision effect.
-
-![74HC595 pinout](docs/74HC595_TSSOP16.png)
 
 ## Links
 
 * [Manufacturer product page](http://www.mhinstek.com/product/html/?106.html) (Chinese) ([English translation](https://translate.google.com/translate?sl=auto&tl=en&js=y&prev=_t&hl=en&ie=UTF-8&u=http%3A%2F%2Fwww.mhinstek.com%2Fproduct%2Fhtml%2F%3F106.html&edit-text=))
 * [EEVBlog forum discussion](http://www.eevblog.com/forum/reviews/b3603-dcdc-buck-converter-mini-review-and-how-the-set-key-could-be-fatal/)
-
-Components needed:
-* [B3603](http://www.banggood.com/B3603-Precision-CNC-DC-DC-Digital-Buck-Module-Constant-Voltage-Current-p-946751.html?p=PA11121233669201502E) -- The unit being reprogrammed
-* [CP2102](http://www.banggood.com/Wholesale-USB-To-TTL-or-COM-Converter-Module-buildin-in-CP2102-New-p-27989.html?p=PA11121233669201502E) -- A usb-to-serial TTL-level
-* [STLink V2](http://www.aliexpress.com/item/FREE-SHIPPING-ST-Link-V2-stlink-mini-STM8STM32-STLINK-simulator-download-programming-With-Cover/1766455290.html) -- programmer for the STM8S microcontroller
 

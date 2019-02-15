@@ -54,7 +54,7 @@ void pwm_init(void)
 	/* Timer 1 Channel 3 for Fan Control */
 	TIM1_CCMR3 = 0x70;    //  Set up to use PWM mode 2.
 	TIM1_CCER2 = 0x03;    //  Output is enabled for channel 3, active low
-	TIM1_CCR3H = 0x30;      //  Start with the PWM signal on to prove the fan works
+	TIM1_CCR3H = 0x10;      //  Start with the PWM signal on to prove the fan works
 	TIM1_CCR3L = 0x00;	
 	
 	TIM1_BKR = 0x80;       //  Enable the main output.
@@ -120,8 +120,10 @@ INLINE void control_voltage(cfg_output_t *cfg, cfg_system_t *sys)
 	uint16_t ctr = pwm_from_set(cfg->vset, &sys->vout_pwm);
 	uart_write_str("PWM VOLTAGE ");
     uart_write_millivalue(cfg->vset);
+#ifdef DEBUG
     uart_write_ch(' ');
 	uart_write_int(ctr);
+#endif
 	uart_write_crlf();
 
 	TIM2_CCR1H = ctr >> 8;
@@ -134,21 +136,34 @@ INLINE void control_current(cfg_output_t *cfg, cfg_system_t *sys)
 	uint16_t ctr = pwm_from_set(cfg->cset, &sys->cout_pwm);
 	uart_write_str("PWM CURRENT ");
     uart_write_millivalue(cfg->cset);
+#ifdef DEBUG
     uart_write_ch(' ');
 	uart_write_int(ctr);
+#endif
 	uart_write_crlf();
-
+#ifdef CLOSED_LOOP_CC		// If closed loop let current slide from one setting to the next unless was previously zero
+	if ( TIM1_CCR1H == 0 && TIM1_CCR1L == 0 ) {
+		TIM1_CCR1H = ctr >> 8;
+		TIM1_CCR1L = ctr & 0xFF;
+	}
+#else
 	TIM1_CCR1H = ctr >> 8;
 	TIM1_CCR1L = ctr & 0xFF;
+#endif
 	TIM1_CR1 |= 0x01; // Enable timer
 }
 
 INLINE void control_fan()
 {
-	uint8_t ctr = (state.cout > MIN_FAN_CURRENT) ? ((state.cout >> 8)<< 2) | 0x03 : 0;	//Start fan at 2A  full speed by 8A
-	if (state.cout > MAX_FAN_CURRENT) ctr = 0xff;
-	TIM1_CCR3H = ctr;
-	TIM1_CCR3L = ctr;
+	uint16_t ctr;
+	if (state.cout < MIN_FAN_CURRENT) ctr = 0;
+#ifdef FAN_PWM
+	if (state.cout > MIN_FAN_CURRENT) ctr = state.cout+256;	// Full speed will be at 7.936A
+#else
+	if (state.cout > MIN_FAN_CURRENT) ctr = 0x2000;
+#endif
+	TIM1_CCR3H = ctr >> 8;
+	TIM1_CCR3L = ctr & 0xff;
 	TIM1_CR1 |= 0x01; // Enable timer
 }
 

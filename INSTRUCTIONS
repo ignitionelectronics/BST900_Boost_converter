@@ -27,7 +27,9 @@ and to connect:
 telnet localhost 10000
 
 Calibration:
-./calibrate.py -m voltage /dev/ttyUSB0
+Calibration requires Python 2.7 
+
+python2 calibrate.py -m voltage /dev/ttyUSB0
 
 calibration (multiply by 65535 to get the raw data)
 0006.6000/0000.0000

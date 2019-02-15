@@ -118,7 +118,7 @@ class B3603(object):
         return self.command("OUTPUT 0")
 
     def voltage(self, v):
-        lines = self.command("VOLTAGE %i" % v)
+        lines = self.command("VOLTAGE %s" % v)
         pwm_vout = None
         pwm_cout = None
         for line in lines:
@@ -131,7 +131,7 @@ class B3603(object):
         return (pwm_vout, pwm_cout)
 
     def current(self, c):
-        lines = self.command("CURRENT %i" % c)
+        lines = self.command("CURRENT %s" % c)
         pwm_vout = None
         pwm_cout = None
         for line in lines:
@@ -304,7 +304,7 @@ def calibration_current(auto):
     psu = B3603(sys.argv[3])
     print 'Attach multimeter in current mode in series with a dummy load  of around 50ohm to output of BST'
     print 'Set input voltage to between 10 and 11V. Nominal output Voltage will be 25V'
-    print 'BST will be opearating in Constant Current mode so actual output voltage should be between Vin and 25V'
+    print 'BST will be operating in Constant Current mode so actual output voltage should be between Vin and 25V'
     if not psu.open():
         print ('Failed to open serial port to device on serial %s' % sys.argv[2])
         return
@@ -318,10 +318,10 @@ def calibration_current(auto):
 
     #BST900 Limits
     NUM_STEPS = 10
-    MIN_CURRENT = 0.10 #A
+    MIN_CURRENT = 0.250 #A
     #MAX_CURRENT = 0.30 #A
-    MAX_CURRENT = 0.30 #A
-    STEP_SIZE = round(((MAX_CURRENT - MIN_CURRENT) / NUM_STEPS),2) #A
+    MAX_CURRENT = 0.450 #A
+    STEP_SIZE = ((MAX_CURRENT - MIN_CURRENT) / NUM_STEPS) #A
     print ('It will use %d steps between %s A and %s A' % (NUM_STEPS, MIN_CURRENT, MAX_CURRENT))
 
     if STEP_SIZE < 0.01:
@@ -338,7 +338,8 @@ def calibration_current(auto):
     valid = True
 
     for step in xrange(NUM_STEPS):
-        curr = round((MIN_CURRENT + step * STEP_SIZE),2)
+        curr = round((MIN_CURRENT + step * STEP_SIZE),3)
+        print curr
         print (step , '. Setting current to', curr, 'A')
         (pwm_vout, pwm_cout) = psu.current(curr)
         # Wait 1 second for things to stabilize

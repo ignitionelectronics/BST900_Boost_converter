@@ -91,10 +91,10 @@ uint16_t adc_read(void)
 	return sum / OVERSAMPLE_DIVIDE;
 }
 
-uint8_t adc_channel(void)
-{
-		return ADC1_CSR & 0x0F;
-}
+//uint8_t adc_channel(void)
+//{
+//		return ADC1_CSR & 0x0F;
+//}
 
 uint8_t adc_ready(void)
 {

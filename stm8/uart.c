@@ -160,6 +160,8 @@ void uart_write_millivalue(uint16_t val)
 	}
 }
 
+
+/*	//  Eliminate fixed point
 void uart_write_fixed_point(uint32_t val)
 {
 	uint32_t tmp;
@@ -186,6 +188,7 @@ void uart_write_fixed_point(uint32_t val)
 	// Write the remaining fractional part
 	uart_write_int32(tmp);
 }
+*/
 
 void uart_write_from_buf(void)
 {

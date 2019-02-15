@@ -46,14 +46,13 @@ cfg_system_t default_cfg_system = {
 
     // pwm = setvoltage * cal.a + cal.b
     // volt = adcvalue * cal.a - cal.b
+ 
+	.vin_adc = { .a = 910000, .b = 0  },							// Estimate for BST900
+	.vout_adc = { .a = 1777000, .b = 0 },
+	.vout_pwm = { .a = 2430, .b = 0 },			//for BST900
 
-	//.vin_adc = { .a = FLOAT_TO_FIXED(6.49151), .b = 0 /* -FLOAT_TO_FIXED(97.7583) */ },   // problem : need negative number here.
-	.vin_adc = { .a = FLOAT_TO_FIXED(13.8855), .b = 0  },							// Estimate for BST900
-	.vout_adc = { .a = FLOAT_TO_FIXED(27.2171), .b = 0 },
-	.vout_pwm = { .a = FLOAT_TO_FIXED(0.180774), .b = FLOAT_TO_FIXED(115.78) },			//Provisional for BST900
-
-	.cout_adc = { .a = FLOAT_TO_FIXED(0.9964), .b = FLOAT_TO_FIXED(0) },   // Estimate for BST900
-	.cout_pwm = { .a = FLOAT_TO_FIXED(0.0946), .b = FLOAT_TO_FIXED(160) },      // Estimate for BST900
+	.cout_adc = { .a = 132697, .b = 15363279 },   // for BST900
+	.cout_pwm = { .a = 10000, .b = 0 },      // Placeholder for BST900. Closed loop feedback will automatically adjust
 };
 
 cfg_output_t default_cfg_output = {

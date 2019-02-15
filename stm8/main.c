@@ -67,20 +67,22 @@ void commit_output()
 
 void write_calibration(calibrate_t *val  OPTIONALARG(const char *tag))
 {
+#ifdef VERBOSECAL
+    if (tag) {
+        uart_write_str(tag);
+        uart_write_ch(' ');
+    }
+#endif
+/*	//  Eliminate fixed point
     uart_write_fixed_point(val->a);
     uart_write_ch('/');
     uart_write_fixed_point(val->b);
     uart_write_ch(' ');
     uart_write_ch(' ');
+*/ 
     uart_write_int32(val->a);
     uart_write_ch('/');
     uart_write_int32(val->b);
-#ifdef VERBOSECAL
-    if (tag) {
-        uart_write_ch(' ');
-        uart_write_str(tag);
-    }
-#endif
     uart_write_crlf();
 }
 
@@ -304,7 +306,7 @@ bool handle_system(const char *arg)
 }
 bool handle_calibration_dump(const char *arg)
 {
-    write_calibration(&cfg_system.vin_adc  OPTIONALARG("VIN ADC"));
+    write_calibration(&cfg_system.vin_adc  OPTIONALARG("VIN  ADC"));
     write_calibration(&cfg_system.vout_adc OPTIONALARG("VOUT ADC"));
     write_calibration(&cfg_system.cout_adc OPTIONALARG("COUT ADC"));
     write_calibration(&cfg_system.vout_pwm OPTIONALARG("VOUT PWM"));
@@ -552,6 +554,7 @@ void config_load(void)
 #endif
 }
 
+
 void read_state(void)
 {
 	uint8_t tmp;
@@ -566,7 +569,7 @@ void read_state(void)
 	}
 #endif
 
-	tmp = (PB_IDR & (1<<5)) ? 1 : 0;
+	tmp = (PB_IDR & (1<<5)) ? 0 : 1;		//CC sense reversed on BST900
 	if (state.constant_current != tmp) {
 		state.constant_current = tmp;
 		output_check_state(&cfg_system, state.constant_current);
@@ -574,37 +577,54 @@ void read_state(void)
 
 	if (adc_ready()) {
 		uint16_t val = adc_read();
-		uint8_t ch = adc_channel();
+//		uint8_t ch = adc_channel();
+		uint8_t ch = ADC1_CSR & 0x0F;	// Get ADC channel
 
 		switch (ch) {
 			case 2:
 				state.cout_raw = val;
 				// Calculation: val * cal_cout_a * 3.3 / 1024 - cal_cout_b
 				state.cout = adc_to_volt(val, &cfg_system.cout_adc);
-				
+				ch = (state.adc_counter--) ? 2 : 3;	//Repeat Cout ADC test until counter expires and we move on to Vout test
 #ifdef CLOSED_LOOP_CC
 				/* Closed loop feedback to adjust Current PWM based on results of last
-				 * adc result. If measured current is greater than CC target then decrement PWM pulse
-				 * , if less, then increment it. 
-				 * Should cause constant current to 'home in' onto its target.
+				 * adc result. If in CC mode measured current is less than CC target then increment PWM pulse
+				 * If in CV mode current drops, then decrement pulse. 
+				 * Should cause constant current to converge onto its target without any PWM calibration.
 				 * This fits closer to the observed behaviour of the stock firmware where the pulse
-				 * width narrows in CV mode and expands in CC node
+				 * width narrows in CV mode and expands in CC node/
+				 * If PWM pulse is too wide MOSFET is on for longer and current is wasted.
 				 *  */
+				if ( !cfg_system.output ) break;	//Output disabled
+				adc_init();		// All ADC readings get screwed up without this. Dunno why? Loop timing issue?
 				uint16_t ccr1H = TIM1_CCR1H;
 				uint16_t ccr1 = TIM1_CCR1L | (ccr1H<<8);
-				if (state.cout > cfg_output.cset) ccr1 = (ccr1 == 0) ? 0 : ccr1 - 1;
-				if (state.cout < cfg_output.cset) ccr1 = (ccr1 == PWM_VAL) ? ccr1 + 1 : PWM_VAL;
-				TIM1_CCR1H = (ccr1>8);
-				TIM1_CCR1L = (ccr1 & 0xFF);
+				//Increase PWM pulse if current less than limit and we are in CC mode
+				if ( state.constant_current && state.cout < cfg_output.cset ) {
+					ccr1 = ( state.cout+256 < cfg_output.cset ) ? ccr1 + 12 : ccr1 + 3;		// Fast up
+				}
+				//Reduce PWM pulse if in CV mode current is well below max ,or if current limit exceeded by 10mA. 
+				// (Resolution of PWM counter is about 15mA)
+				if ( (state.cout > cfg_output.cset+10 || ( !state.constant_current && state.cout + 512 < cfg_output.cset)) && ccr1 >= 1) {
+					ccr1 -= 1;
+				}
+				if ( state.cout > cfg_output.cset+256 && ccr1 >= 12) ccr1 -= 12;		//Fast down
+				// Halve PWM pulse if open circuit (rapid down)
+				if ( state.cout == 0 ) {
+					ccr1 = ccr1 >> 1;
+				}
+
+				TIM1_CCR1H = ccr1>>8;
+				TIM1_CCR1L = ccr1 & 0xFF;
 #endif
 				
-				ch = 3;
 				break;
 			case 3:
 				state.vout_raw = val;
 				// Calculation: val * cal_vout_a * 3.3 / 1024 - cal_vout_b
 				state.vout = adc_to_volt(val, &cfg_system.vout_adc);
 				ch = 4;
+				state.adc_counter = 8; //Reset counter for next time Cout test runs
 				break;
 			case 4:
 				state.vin_raw = val;
@@ -638,7 +658,7 @@ int main()
 {
 	unsigned long i = 0;
 	button_t button = BUTTON_NONE;
-
+	state.adc_counter = 8;		// Initialise count of Cout ADC samples
 	pinout_init();
 	clk_init();
 	uart_init();
