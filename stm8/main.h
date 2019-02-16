@@ -2,9 +2,6 @@
 #define MAIN_H
 
 #define BST900		//Uncomment if building for BST400 boost converters
-#define CLOSED_LOOP_CC	//Comment to disable experimental Closed Lop Constant Current Control
-
-
 
 #define CRLF	"\r\n"	//Use \n for Linux \r\n for Windows
 
@@ -47,7 +44,7 @@
 #define CAP_CMAX 15000 // 15 A
 #define CAP_CSTEP 10 // 10 mA
 #endif //BST900
-#define FW_VERSION "0.0.5"
+#define FW_VERSION "0.0.7"
 
 //#define FAN_PWM					//If defined Fan will use PWM which can cause the fan windings to 'sing'
 								// If this is annoying leave undefined and Fan will be at max speed above MIN_FAN_CURRENT

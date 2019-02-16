@@ -52,7 +52,7 @@ cfg_system_t default_cfg_system = {
 	.vout_pwm = { .a = 2430, .b = 0 },			//for BST900
 
 	.cout_adc = { .a = 132697, .b = 15363279 },   // for BST900
-	.cout_pwm = { .a = 10000, .b = 0 },      // Placeholder for BST900. Closed loop feedback will automatically adjust
+	//.cout_pwm = { .a = 10000, .b = 0 },      // Not needed for closed loop Cout control
 };
 
 cfg_output_t default_cfg_output = {
@@ -73,8 +73,8 @@ INLINE void validate_system_config(cfg_system_t *sys)
 			sys->vin_adc.a == 0 ||
 			sys->vout_adc.a == 0 ||
 			sys->cout_adc.a == 0 ||
-			sys->vout_pwm.a == 0 ||
-			sys->cout_pwm.a == 0
+			sys->vout_pwm.a == 0
+			//sys->cout_pwm.a == 0
 			)
 	{
 		config_default_system(sys);

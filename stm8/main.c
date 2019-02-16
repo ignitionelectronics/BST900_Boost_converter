@@ -310,7 +310,7 @@ bool handle_calibration_dump(const char *arg)
     write_calibration(&cfg_system.vout_adc OPTIONALARG("VOUT ADC"));
     write_calibration(&cfg_system.cout_adc OPTIONALARG("COUT ADC"));
     write_calibration(&cfg_system.vout_pwm OPTIONALARG("VOUT PWM"));
-    write_calibration(&cfg_system.cout_pwm OPTIONALARG("COUT PWM"));
+    //write_calibration(&cfg_system.cout_pwm OPTIONALARG("COUT PWM"));
     return true;
 }
 bool handle_limit_dump(const char *arg)
@@ -432,7 +432,7 @@ struct calcommand calibrationhandlers[] = {
     { "VOUTADC", 7, &cfg_system.vout_adc, OPTIONAL("configure Vout adc -> volt parameters") },
     { "VOUTPWM", 7, &cfg_system.vout_pwm, OPTIONAL("configure Vout pwm -> volt parameters") },
     { "COUTADC", 7, &cfg_system.cout_adc, OPTIONAL("configure Cout adc -> ampere parameters") },
-    { "COUTPWM", 7, &cfg_system.cout_pwm, OPTIONAL("configure Cout pwm -> ampere parameters") },
+    //{ "COUTPWM", 7, &cfg_system.cout_pwm, OPTIONAL("configure Cout pwm -> ampere parameters") },
 };
 bool handle_command_help(const char*arg)
 {
@@ -577,7 +577,6 @@ void read_state(void)
 
 	if (adc_ready()) {
 		uint16_t val = adc_read();
-//		uint8_t ch = adc_channel();
 		uint8_t ch = ADC1_CSR & 0x0F;	// Get ADC channel
 
 		switch (ch) {
@@ -586,7 +585,6 @@ void read_state(void)
 				// Calculation: val * cal_cout_a * 3.3 / 1024 - cal_cout_b
 				state.cout = adc_to_volt(val, &cfg_system.cout_adc);
 				ch = (state.adc_counter--) ? 2 : 3;	//Repeat Cout ADC test until counter expires and we move on to Vout test
-#ifdef CLOSED_LOOP_CC
 				/* Closed loop feedback to adjust Current PWM based on results of last
 				 * adc result. If in CC mode measured current is less than CC target then increment PWM pulse
 				 * If in CV mode current drops, then decrement pulse. 
@@ -595,28 +593,40 @@ void read_state(void)
 				 * width narrows in CV mode and expands in CC node/
 				 * If PWM pulse is too wide MOSFET is on for longer and current is wasted.
 				 *  */
-				if ( !cfg_system.output ) break;	//Output disabled
+
 				adc_init();		// All ADC readings get screwed up without this. Dunno why? Loop timing issue?
 				uint16_t ccr1H = TIM1_CCR1H;
 				uint16_t ccr1 = TIM1_CCR1L | (ccr1H<<8);
+				
 				//Increase PWM pulse if current less than limit and we are in CC mode
 				if ( state.constant_current && state.cout < cfg_output.cset ) {
-					ccr1 = ( state.cout+256 < cfg_output.cset ) ? ccr1 + 12 : ccr1 + 3;		// Fast up
+					//ccr1 = ( state.cout+256 < cfg_output.cset ) ? ccr1 + 12 : ccr1 + 3;		// Fast up
+					uint16_t tmp = cfg_output.cset - state.cout;		//Distance to target current
+					ccr1 += (tmp/32)+1;		//Upspeed proportional to distance between current and target
 				}
-				//Reduce PWM pulse if in CV mode current is well below max ,or if current limit exceeded by 10mA. 
+				
+				
+				//Reduce PWM pulse if in CV mode current is well below max. 
 				// (Resolution of PWM counter is about 15mA)
-				if ( (state.cout > cfg_output.cset+10 || ( !state.constant_current && state.cout + 512 < cfg_output.cset)) && ccr1 >= 1) {
+				//if ( (state.cout > cfg_output.cset+10 || ( !state.constant_current && state.cout + 512 < cfg_output.cset)) && ccr1 >= 1) {
+				if ( ( !state.constant_current && state.cout + 512 < cfg_output.cset) && ccr1 >= 1) {
 					ccr1 -= 1;
 				}
-				if ( state.cout > cfg_output.cset+256 && ccr1 >= 12) ccr1 -= 12;		//Fast down
+				
 				// Halve PWM pulse if open circuit (rapid down)
 				if ( state.cout == 0 ) {
 					ccr1 = ccr1 >> 1;
 				}
+				
+				
+				// Reduce PWM pulse if in CC mode and current is above target
+				if ( state.cout > cfg_output.cset+10 ) {
+					uint16_t tmp = state.cout - (cfg_output.cset+10);		//Distance to target current
+					ccr1 = (ccr1 > tmp/32 ) ? ccr1 - (tmp/32)-1 : 0;	//Down speed proportional to distance between current and target
+				} 
 
 				TIM1_CCR1H = ccr1>>8;
 				TIM1_CCR1L = ccr1 & 0xFF;
-#endif
 				
 				break;
 			case 3:

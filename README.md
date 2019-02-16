@@ -12,7 +12,7 @@ BST900 and BST400 have a different architecture to the original B3603. They use 
 The project is a work in progress. It is functional. Control over the  BST900 using the serial interface is working, but it currently only supports output voltages to 65.5V.
 
 ![BST900 with STM8 Development board](docs/BST900_with_STM8_development_board.png) The firmware may be loaded onto a BST900 top board, but because the stock firmware is read protected it is not possible to  save the stock firmware and revert back to it later. However it is possible to load the firmware onto an STM8 development board, and by hooking up
-the appropriate pins to the connector, run the firmware without the seven segment display or push buttons. The firmware can thereby be evaluated without making any irrevesible choices.
+the appropriate pins to the connector, run the firmware without the seven segment display or push buttons. The firmware can thereby be evaluated without making any irreversible choices.
 
 ## Alternative to this firmware
 There is another way to control the current delivered by a BST900 without having to change the firmware. It is possible to set the constant current limit using either an analogue or digital potentiometer.

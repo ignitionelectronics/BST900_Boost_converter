@@ -110,7 +110,8 @@ uint8_t display_char(uint8_t ch, uint8_t dot)
 {
 	if (dot)
 		dot = 1;
-	if (ch >= 0 && ch <= NALFA)
+	//if (ch >= 0 && ch <= NALFA)
+		if ( ch <= NALFA)
 		return num_code[ch] | dot;
 	return dot;
 }
