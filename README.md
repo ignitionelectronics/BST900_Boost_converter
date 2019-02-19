@@ -9,7 +9,7 @@ The plugin top board of BST900 has a convenient unused serial socket (3.3V logic
 BST900 and BST400 have a different architecture to the original B3603. They use a UCC3803 Current Mode PWM controller on their bottom boards, but they use the same  STM8 based microcontroller top board albeit running slightly different firmware.
 
 ### Status
-The project is a work in progress. It is functional. Control over the  BST900 using the serial interface is working, but it currently only supports output voltages to 65.5V.
+The project is fully functional. A binary file can be found in the releases folder. It has been tested with BST900, but not with BST400. To compile for BST400 edit the #define in the main.h file.
 
 ![BST900 with STM8 Development board](docs/BST900_with_STM8_development_board.png) The firmware may be loaded onto a BST900 top board, but because the stock firmware is read protected it is not possible to  save the stock firmware and revert back to it later. However it is possible to load the firmware onto an STM8 development board, and by hooking up
 the appropriate pins to the connector, run the firmware without the seven segment display or push buttons. The firmware can thereby be evaluated without making any irreversible choices.
@@ -42,11 +42,12 @@ The output voltage is controlled by a PWM signal on pin5 of the upper board in e
 
 ## ToDo
 
-* Implement control for the cooling fan.  - Done
-* Rework Constant Current control to suit BST900. - Done
-* Implement a start at power on feature to suit my application for charging a home battery system. - Done
+* Implement control for the cooling fan.  - Done (Default threshold is 2.5A)
+* Rework Constant Current control to suit BST900. - Done (Now uses closed loop feedback. Requires no PWM calibration)
+* Implement a start at power on feature to suit my application for charging a home battery system. - Done (added Command DEFAULT <0|1> )
 * Recalibrate all measurements and PWM to suit BST900 - Done
-* Rework code to use a 10mV voltage resolution to allow voltages above 65535mV - In Progress
+* Rework code to use a 10mV voltage resolution to allow voltages above 65535mV - Done
+* Add command ECHO <0|1> to provide positive confirmation of commands - Done
 
 
 ## Components needed:

@@ -18,7 +18,7 @@ def calc_stddev(data, avg):
 class B3603(object):
     def __init__(self, portname):
         self.portname = portname
-        self.debug = False
+        self.debug = True
 
     def open(self):
         self.s = serial.Serial(self.portname, baudrate=38400, bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=0.2)
@@ -125,9 +125,9 @@ class B3603(object):
             word = line.split(' ')
             if word[0] != 'PWM' and word[0] != 'aWM': continue
             if word[1] == 'VOLTAGE':
-                pwm_vout = float(word[3])
+                pwm_vout = float(word[2])
             if word[1] == 'CURRENT':
-                pwm_cout = float(word[3])
+                pwm_cout = float(word[2])
         return (pwm_vout, pwm_cout)
 
     def current(self, c):
@@ -138,9 +138,9 @@ class B3603(object):
             word = line.split(' ')
             if word[0] != 'PWM' and word[0] != 'aWM': continue
             if word[1] == 'VOLTAGE':
-                pwm_vout = float(word[3])
+                pwm_vout = float(word[2])
             if word[1] == 'CURRENT':
-                pwm_cout = float(word[3])
+                pwm_cout = float(word[2])
         return (pwm_vout, pwm_cout)
 
 
@@ -224,9 +224,10 @@ def calibration_voltage(auto):
 
     #BST900 Limits
     vin = (psu.status()['vin']) #V
-    NUM_STEPS = 10
     MIN_VOLTAGE = vin + 2 #V
-    MAX_VOLTAGE = 60
+    MAX_VOLTAGE = input("Enter the maximum Voltage in V: ")
+    NUM_STEPS = input("Enter the number of steps: ")
+    
     STEP_SIZE = round(((MAX_VOLTAGE - MIN_VOLTAGE) / NUM_STEPS),2) #V
     print ('PSU Input voltage is %s V, will use %d steps between %s V and %s V' % (vin, NUM_STEPS, MIN_VOLTAGE, MAX_VOLTAGE))
 
@@ -254,13 +255,13 @@ def calibration_voltage(auto):
             vout = dmm.sample3(3) # Use three samples
         else:
             vout = input("Enter the Vout measured with Multimeter in mV: ")  
-
+			vout = vout/10		#Convert to centiVolts
         if vout == None:
             print ('Failed to get vout')
             valid = False
             break
         if vout < vin:
-            print ('Vout is %s and Vin is %s mV, this means that pwm calibration is saturated and the test will be meaningless' % (vout, vin))
+            print ('Vout is %s and Vin is %s mV, this means that pwm calibration is saturated and the test will be meaningless' % (vout*10, vin))
             valid = False
             break
         rstatus = psu.rstatus()
@@ -286,25 +287,29 @@ def calibration_voltage(auto):
     if adc_b_tmp < 0:
         adc_b_tmp = -adc_b_tmp
     else:
-        print ('Expected ADC_B to be negative... for some reason it\'ts not')
+        #print ('Expected ADC_B to be negative... for some reason it\'ts not')
         adc_b_tmp = 0
     adc_b = int(adc_b_tmp*65536)
-    print (val, adc_a, adc_b)
+    if adc_b < 0:
+		adc_b = 0
+    #print (val, adc_a, adc_b)
+    print (adc_a, adc_b)
     print (psu.command('CAL_VOUTADC %d %d' % (adc_a, adc_b)))
     print ('PWM')
     val = lse(vout_data, pwm_data)
     pwm_a = int(val[0]*65536)
     pwm_b = int(val[1]*65536)
-    print (val, pwm_a, pwm_b)
+    if pwm_b < 0:
+		pwm_b = 0
+    print (pwm_a, pwm_b)
     print (psu.command('CAL_VOUTPWM %d %d' % (pwm_a, pwm_b)))
 
     psu.close()
 
 def calibration_current(auto):
     psu = B3603(sys.argv[3])
-    print 'Attach multimeter in current mode in series with a dummy load  of around 50ohm to output of BST'
-    print 'Set input voltage to between 10 and 11V. Nominal output Voltage will be 25V'
-    print 'BST will be operating in Constant Current mode so actual output voltage should be between Vin and 25V'
+    print 'Attach multimeter in current mode in series with a dummy load  capable of sinking a substantial current.'
+    print 'BST will be operating in Constant Current mode. Actual output voltage MUST be above input voltage at all times.'
     if not psu.open():
         print ('Failed to open serial port to device on serial %s' % sys.argv[2])
         return
@@ -317,10 +322,11 @@ def calibration_current(auto):
             return
 
     #BST900 Limits
-    NUM_STEPS = 10
-    MIN_CURRENT = 0.250 #A
-    #MAX_CURRENT = 0.30 #A
-    MAX_CURRENT = 0.450 #A
+    MIN_CURRENT = input("Enter the minimum current in Amps: ")
+    MAX_CURRENT = input("Enter the maximum current in Amps: ")
+    NUM_STEPS = input("Enter the number of steps: ")
+    TEST_VOLTAGE = input("Enter the test Voltage in Volts: ")
+    
     STEP_SIZE = ((MAX_CURRENT - MIN_CURRENT) / NUM_STEPS) #A
     print ('It will use %d steps between %s A and %s A' % (NUM_STEPS, MIN_CURRENT, MAX_CURRENT))
 
@@ -329,7 +335,7 @@ def calibration_current(auto):
         return
 
     psu.output_on()
-    psu.voltage(25.00) #25V (Should be enough for Curt Circuit Test. Take care...) 
+    psu.voltage(TEST_VOLTAGE) #25V (Should be enough for Curt Circuit Test. Take care...) 
     psu.current(MIN_CURRENT)
 
     pwm_data = []
@@ -377,18 +383,21 @@ def calibration_current(auto):
     if adc_b_tmp < 0:
         adc_b_tmp = -adc_b_tmp
     else:
-        print ('Expected ADC_B to be negative... for some reason it\'ts not')
+        #print ('Expected ADC_B to be negative... for some reason it\'ts not')
         adc_b_tmp = 0
     adc_b = int(adc_b_tmp*65536)
-    print (val, adc_a, adc_b)
+    if adc_b < 0:
+		adc_b = 0
+    print (adc_a, adc_b)
     print (psu.command('CAL_COUTADC %d %d' % (adc_a, adc_b)))
     print
-    print ('PWM')
-    val = lse(cout_data, pwm_data)
-    pwm_a = int(val[0]*65536)
-    pwm_b = int(val[1]*65536)
-    print (val, pwm_a, pwm_b)
-    print (psu.command('CAL_COUTPWM %d %d' % (pwm_a, pwm_b)))
+    # Coutpwm calibration not necessary in BST900 due to closed loop feedback
+    #print ('PWM')
+    #val = lse(cout_data, pwm_data)
+    #pwm_a = int(val[0]*65536)
+    #pwm_b = int(val[1]*65536)
+    #print (val, pwm_a, pwm_b)
+    #print (psu.command('CAL_COUTPWM %d %d' % (pwm_a, pwm_b)))
 
     psu.close()
 
@@ -399,17 +408,17 @@ def calibration_init():
 
 
     #Current
-    adc_a = int(0000.9964 * 65536)
-    adc_b = int(0)
+    adc_a = int(138810)
+    adc_b = int(14727573)
     pwm_a = int(0000.0946 * 65536)
     pwm_b = int(0)
     print psu.command('CAL_COUTADC %d %d' % (adc_a, adc_b))
-    print psu.command('CAL_COUTPWM %d %d' % (pwm_a, pwm_b))
+    #print psu.command('CAL_COUTPWM %d %d' % (pwm_a, pwm_b))
 
     #Voltage
-    adc_a = int(0027.1149 * 65536)
+    adc_a = int(180150)
     adc_b = int(0)
-    pwm_a = int(0000.0371 * 65536)
+    pwm_a = int(24050)
     pwm_b = int(0)
     print psu.command('CAL_VOUTADC %d %d' % (adc_a, adc_b))
     print psu.command('CAL_VOUTPWM %d %d' % (pwm_a, pwm_b))
