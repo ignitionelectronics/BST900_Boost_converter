@@ -3,7 +3,7 @@
 
 #define BST900		//Uncomment if building for BST400 boost converters
 
-#define CRLF	"\r\n"	//Use \n for Linux \r\n for Windows
+#define CRLF	"\r\n"	//Use   \n or  \r\n 
 
 #include "display.h"
 #include <stdint.h>
@@ -16,18 +16,10 @@
 #ifndef BST900
 #define MODEL "BST400"
 
-/*There is a problem. BST900 supports output voltages up to 120V which exceeds the addressing 
- * range of a 16 bit integer.
- * Either output voltage is limited to 65000mV or else all the code
- * has to be converted to uint32_t which could bust memory constraints.
- * Other alternative is to work with 10mV resolution.
-* 
-* */
 
-
-#define CAP_VMIN 8000 // 10V
-#define CAP_VMAX 65000 // 80 V
-#define CAP_VSTEP 10 // 10mV
+#define CAP_VMIN 800 // 10V --centiVolts
+#define CAP_VMAX 12000 // 80 V --centiVolts
+#define CAP_VSTEP 10 // 10cV
 
 #define CAP_CMIN 100 // 100 mA
 #define CAP_CMAX 10000 // 15 A
@@ -36,15 +28,15 @@
 #else
 #define MODEL "BST900"
 
-#define CAP_VMIN 10000 // 10V
-#define CAP_VMAX 65500 // 120 V
-#define CAP_VSTEP 10 // 10mV
+#define CAP_VMIN 1000 // 10V	--centiVolts
+#define CAP_VMAX 12000 // 120 V	--centiVolts
+#define CAP_VSTEP 10 // 10cV
 
 #define CAP_CMIN 10 // 10 mA
 #define CAP_CMAX 15000 // 15 A
 #define CAP_CSTEP 10 // 10 mA
 #endif //BST900
-#define FW_VERSION "0.0.7"
+#define FW_VERSION "1.0.0"
 
 //#define FAN_PWM					//If defined Fan will use PWM which can cause the fan windings to 'sing'
 								// If this is annoying leave undefined and Fan will be at max speed above MIN_FAN_CURRENT

@@ -119,7 +119,7 @@ INLINE void control_voltage(cfg_output_t *cfg, cfg_system_t *sys)
 {
 	uint16_t ctr = pwm_from_set(cfg->vset, &sys->vout_pwm);
 	uart_write_str("PWM VOLTAGE ");
-    uart_write_millivalue(cfg->vset);
+    uart_write_centivalue(cfg->vset);
 	uart_write_crlf();
 
 	TIM2_CCR1H = ctr >> 8;

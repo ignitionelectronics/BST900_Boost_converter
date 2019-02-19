@@ -47,17 +47,19 @@ cfg_system_t default_cfg_system = {
     // pwm = setvoltage * cal.a + cal.b
     // volt = adcvalue * cal.a - cal.b
  
-	.vin_adc = { .a = 910000, .b = 0  },							// Estimate for BST900
-	.vout_adc = { .a = 1777000, .b = 0 },
-	.vout_pwm = { .a = 2430, .b = 0 },			//for BST900
 
-	.cout_adc = { .a = 132697, .b = 15363279 },   // for BST900
+	.vin_adc = { .a = 91900, .b = 0  },							//  for BST900 adjusted for centiVolts
+	.vout_adc = { .a = 180150, .b = 0 },						//  for BST900 adjusted for centiVolts	
+	
+	.vout_pwm = { .a = 24050, .b = 0 },			//for BST900
+
+	.cout_adc = { .a = 138810, .b =14727573  },   // for BST900
 	//.cout_pwm = { .a = 10000, .b = 0 },      // Not needed for closed loop Cout control
 };
 
 cfg_output_t default_cfg_output = {
 	OUTPUT_CFG_VERSION,
-	10000, // 10V
+	1000, // 10V
 	500, // 0.5A
 };
 
@@ -74,7 +76,6 @@ INLINE void validate_system_config(cfg_system_t *sys)
 			sys->vout_adc.a == 0 ||
 			sys->cout_adc.a == 0 ||
 			sys->vout_pwm.a == 0
-			//sys->cout_pwm.a == 0
 			)
 	{
 		config_default_system(sys);

@@ -145,7 +145,7 @@ bool set_output(const char *s)
 }
 
 
-// voltage in mV
+// voltage in cV --centiVolts
 bool set_voltage(uint16_t voltage)
 {
 	uint16_t val = voltage;
@@ -153,7 +153,7 @@ bool set_voltage(uint16_t voltage)
 	if (val == 0xFFFF)
 		return false;
 
-	if ((val > CAP_VMAX) || (val < CAP_VMIN)) {  // 8000 .. 120000 mV
+	if ((val > CAP_VMAX) || (val < CAP_VMIN)) {  // 800 .. 12000 cV
 		return false;
 	}
 
@@ -165,7 +165,8 @@ bool set_voltage(uint16_t voltage)
 bool set_voltage_arg(const char *arg)
 {
     if (arg == NULL) return false;
-    return set_voltage(parse_set_value(arg));
+    uint32_t tmp = parse_set_value(arg)/10;		//Convert to centiVolts
+    return set_voltage(tmp);
 }
 
 
@@ -278,6 +279,14 @@ void write_millivalue(const char *prefix, uint16_t millival)
 	uart_write_millivalue(millival);
 	uart_write_crlf();
 }
+
+void write_centivalue(const char *prefix, uint16_t centival)
+{
+	uart_write_str(prefix);
+	uart_write_centivalue(centival);
+	uart_write_crlf();
+}
+
 void write_raw_millivalue(const char *prefix, uint16_t millival, uint16_t rawval)
 {
 	uart_write_str(prefix);
@@ -286,6 +295,18 @@ void write_raw_millivalue(const char *prefix, uint16_t millival, uint16_t rawval
 	uart_write_int(rawval);
 	uart_write_crlf();
 }
+
+
+
+void write_raw_centivalue(const char *prefix, uint16_t centival, uint16_t rawval)
+{
+	uart_write_str(prefix);
+	uart_write_centivalue(centival);
+	uart_write_ch(' ');
+	uart_write_int(rawval);
+	uart_write_crlf();
+}
+
 
 void write_int(const char *prefix, uint16_t val)
 {
@@ -310,14 +331,13 @@ bool handle_calibration_dump(const char *arg)
     write_calibration(&cfg_system.vout_adc OPTIONALARG("VOUT ADC"));
     write_calibration(&cfg_system.cout_adc OPTIONALARG("COUT ADC"));
     write_calibration(&cfg_system.vout_pwm OPTIONALARG("VOUT PWM"));
-    //write_calibration(&cfg_system.cout_pwm OPTIONALARG("COUT PWM"));
     return true;
 }
 bool handle_limit_dump(const char *arg)
 {
-    write_millivalue("VMIN: ", CAP_VMIN);
-    write_millivalue("VMAX: ", CAP_VMAX);
-    write_millivalue("VSTEP:", CAP_VSTEP);
+    write_centivalue("VMIN: ", CAP_VMIN);
+    write_centivalue("VMAX: ", CAP_VMAX);
+    write_centivalue("VSTEP:", CAP_VSTEP);
     write_millivalue("CMIN: ", CAP_CMIN);
     write_millivalue("CMAX: ", CAP_CMAX);
     write_millivalue("CSTEP:", CAP_CSTEP);
@@ -326,15 +346,18 @@ bool handle_limit_dump(const char *arg)
 bool handle_config_dump(const char *arg)
 {
     write_onoff(     "OUTPUT: ", cfg_system.output);
-    write_millivalue("VSET: ", cfg_output.vset);
+    write_centivalue("VSET: ", cfg_output.vset);
     write_millivalue("CSET: ", cfg_output.cset);
     return true;
 }
 bool handle_status_dump(const char *arg)
 {
     write_onoff(         "OUTPUT: ", cfg_system.output);
-    write_raw_millivalue("VIN:  ", state.vin,  state.vin_raw );
-    write_raw_millivalue("VOUT: ", state.vout, state.vout_raw);
+//    write_raw_centivalue("VIN:  ", state.vin,  state.vin_raw );
+//    write_raw_centivalue("VOUT: ", state.vout, state.vout_raw);
+//    write_raw_millivalue("COUT: ", state.cout, state.cout_raw);
+    write_raw_centivalue("VIN:  ", state.vin,  state.vin_raw );
+    write_raw_centivalue("VOUT: ", state.vout, state.vout_raw);
     write_raw_millivalue("COUT: ", state.cout, state.cout_raw);
     write_str(           "CONSTANT: ", state.constant_current ? "CURRENT" : "VOLTAGE");
     return true;
@@ -457,6 +480,9 @@ bool handle_command_help(const char*arg)
     }
     return true;
 }
+
+
+ 
 void process_input()
 {
     bool ok = false;
@@ -497,6 +523,7 @@ void process_input()
 	uart_read_len = 0;
 	read_newline = 0;
 }
+
 
 inline void clk_init()
 {
