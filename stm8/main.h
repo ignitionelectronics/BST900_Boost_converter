@@ -36,7 +36,7 @@
 #define CAP_CMAX 15000 // 15 A
 #define CAP_CSTEP 10 // 10 mA
 #endif //BST900
-#define FW_VERSION "1.0.0"
+#define FW_VERSION "1.0.1"
 
 //#define FAN_PWM					//If defined Fan will use PWM which can cause the fan windings to 'sing'
 								// If this is annoying leave undefined and Fan will be at max speed above MIN_FAN_CURRENT

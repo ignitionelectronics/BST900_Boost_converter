@@ -8,8 +8,11 @@
 #include "uart.h"
 
 #define TIMER 8000
-fsm_states_t Fsm_state = FSM_DISP_VIN;
-fsm_states_t Fsm_state_chain = FSM_DISP_VIN;
+//fsm_states_t Fsm_state = FSM_DISP_VIN;
+//fsm_states_t Fsm_state_chain = FSM_DISP_VIN;
+
+fsm_states_t Fsm_state = FSM_DISP_IOUT;		//Default to display Current on power up
+fsm_states_t Fsm_state_chain = FSM_DISP_IOUT;
 
 void fsm_event_update(fsm_event_t *evt, button_t button, cfg_system_t *sys)
 {
