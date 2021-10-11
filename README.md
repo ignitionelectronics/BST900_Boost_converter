@@ -2,6 +2,8 @@
 
 ## NEW VERSION to MANAGE BST900 REMOTELY USING WiFi
 **NEW Firmware for ESP32 to manage a BST900 Converter remotely using MQTT over WiFi is now [available](https://github.com/delboy711/BST900-ESP32)**
+---
+
 
 ### Control of Boost Converter over serial interface
 
